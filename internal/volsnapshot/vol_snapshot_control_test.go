@@ -288,7 +288,7 @@ func TestVolumeSnapshotControl_CreateSnapshot(t *testing.T) {
 			"test":                       "labels",
 			kube.ControllerLabel:         "cosmos-operator",
 			kube.ComponentLabel:          "ScheduledVolumeSnapshot",
-			"cosmos.strange.love/source": "my-snapshot",
+			"cosmos.bharvest.io/source": "my-snapshot",
 		}
 		require.Equal(t, wantLabels, got.Labels)
 
@@ -415,7 +415,7 @@ func TestVolumeSnapshotControl_DeleteOldSnapshots(t *testing.T) {
 		}
 		require.Zero(t, listOpt.Limit)
 		require.Equal(t, "default", listOpt.Namespace)
-		require.Equal(t, "cosmos.strange.love/source=agoric", listOpt.LabelSelector.String())
+		require.Equal(t, "cosmos.bharvest.io/source=agoric", listOpt.LabelSelector.String())
 
 		require.EqualValues(t, additional, len(mClient.DeletedObjs))
 
