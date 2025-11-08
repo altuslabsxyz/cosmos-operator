@@ -1,4 +1,4 @@
-module github.com/strangelove-ventures/cosmos-operator
+module github.com/b-harvest/cosmos-operator
 
 go 1.21
 

@@ -8,8 +8,8 @@ import (
 	snapshotv1 "github.com/kubernetes-csi/external-snapshotter/client/v6/apis/volumesnapshot/v1"
 	"github.com/robfig/cron/v3"
 	"github.com/samber/lo"
-	cosmosalpha "github.com/strangelove-ventures/cosmos-operator/api/v1alpha1"
-	"github.com/strangelove-ventures/cosmos-operator/internal/kube"
+	cosmosalpha "github.com/b-harvest/cosmos-operator/api/v1alpha1"
+	"github.com/b-harvest/cosmos-operator/internal/kube"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 

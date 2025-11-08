@@ -8,10 +8,10 @@ import (
 	"strings"
 	"sync"
 
-	cosmosv1 "github.com/bharvest-devops/cosmos-operator/api/v1"
-	"github.com/bharvest-devops/cosmos-operator/internal/healthcheck"
-	"github.com/bharvest-devops/cosmos-operator/internal/kube"
-	"github.com/bharvest-devops/cosmos-operator/internal/version"
+	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
+	"github.com/b-harvest/cosmos-operator/internal/healthcheck"
+	"github.com/b-harvest/cosmos-operator/internal/kube"
+	"github.com/b-harvest/cosmos-operator/internal/version"
 	"github.com/samber/lo"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -97,7 +97,7 @@ func NewPodBuilder(crd *cosmosv1.CosmosFullNode) PodBuilder {
 					Name: "healthcheck",
 					// Available images: https://github.com/orgs/strangelove-ventures/packages?repo_name=cosmos-operator
 					// IMPORTANT: Must use v0.6.2 or later.
-					Image:   "ghcr.io/bharvest-devops/cosmos-operator:" + version.DockerTag(),
+					Image:   "ghcr.io/b-harvest/cosmos-operator:" + version.DockerTag(),
 					Command: []string{"/manager", "healthcheck"},
 					Ports:   []corev1.ContainerPort{{ContainerPort: healthCheckPort, Protocol: corev1.ProtocolTCP}},
 					Resources: corev1.ResourceRequirements{
@@ -117,7 +117,7 @@ func NewPodBuilder(crd *cosmosv1.CosmosFullNode) PodBuilder {
 		// version check sidecar, runs on inverval in case the instance is halting for upgrade.
 		pod.Spec.Containers = append(pod.Spec.Containers, corev1.Container{
 			Name:    "version-check-interval",
-			Image:   "ghcr.io/bharvest-devops/cosmos-operator:" + version.DockerTag(),
+			Image:   "ghcr.io/b-harvest/cosmos-operator:" + version.DockerTag(),
 			Command: versionCheckCmd,
 			Resources: corev1.ResourceRequirements{
 				Requests: corev1.ResourceList{
@@ -553,7 +553,7 @@ func initContainers(crd *cosmosv1.CosmosFullNode, moniker string) []corev1.Conta
 	// After the status is patched, the pod will be restarted with the correct image.
 	required = append(required, corev1.Container{
 		Name:    "version-check",
-		Image:   "ghcr.io/bharvest-devops/cosmos-operator:" + version.DockerTag(),
+		Image:   "ghcr.io/b-harvest/cosmos-operator:" + version.DockerTag(),
 		Command: versionCheckCmd,
 		Resources: corev1.ResourceRequirements{
 			Requests: corev1.ResourceList{

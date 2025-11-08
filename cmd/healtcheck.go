@@ -9,8 +9,8 @@ import (
 	"github.com/go-logr/zapr"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/strangelove-ventures/cosmos-operator/internal/cosmos"
-	"github.com/strangelove-ventures/cosmos-operator/internal/healthcheck"
+	"github.com/b-harvest/cosmos-operator/internal/cosmos"
+	"github.com/b-harvest/cosmos-operator/internal/healthcheck"
 	"golang.org/x/sync/errgroup"
 )
 

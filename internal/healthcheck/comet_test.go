@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	"github.com/strangelove-ventures/cosmos-operator/internal/cosmos"
+	"github.com/b-harvest/cosmos-operator/internal/cosmos"
 	"github.com/stretchr/testify/require"
 )
 

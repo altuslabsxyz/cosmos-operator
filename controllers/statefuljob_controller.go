@@ -24,9 +24,9 @@ import (
 
 	"github.com/go-logr/logr"
 	snapshotv1 "github.com/kubernetes-csi/external-snapshotter/client/v6/apis/volumesnapshot/v1"
-	cosmosalpha "github.com/strangelove-ventures/cosmos-operator/api/v1alpha1"
-	"github.com/strangelove-ventures/cosmos-operator/internal/kube"
-	"github.com/strangelove-ventures/cosmos-operator/internal/statefuljob"
+	cosmosalpha "github.com/b-harvest/cosmos-operator/api/v1alpha1"
+	"github.com/b-harvest/cosmos-operator/internal/kube"
+	"github.com/b-harvest/cosmos-operator/internal/statefuljob"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/record"
