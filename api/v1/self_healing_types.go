@@ -26,6 +26,11 @@ type SelfHealSpec struct {
 	//
 	// +optional
 	HeightDriftMitigation *HeightDriftMitigationSpec `json:"heightDriftMitigation"`
+
+	// Automatically prune blockchain data to manage disk usage.
+	//
+	// +optional
+	PruningSpec *PruningPodSpec `json:"pruningSpec"`
 }
 
 type PVCAutoScaleSpec struct {
@@ -61,6 +66,18 @@ type HeightDriftMitigationSpec struct {
 	// A "rebooted" pod /status reports itself correctly and allows it to catch up to chain tip.
 	// +kubebuilder:validation:Minimum:=1
 	Threshold uint32 `json:"threshold"`
+}
+
+type PruningPodSpec struct {
+	// Docker image for the pruning pod.
+	// If not specified, defaults to "ghcr.io/bharvest-devops/cosmos-pruner:latest".
+	// +optional
+	Image string `json:"image"`
+
+	// Command to execute for pruning.
+	// If not specified, defaults to "cosmos-pruner compact /home/operator/cosmos/data/ 2>&1".
+	// +optional
+	PruningCommand string `json:"pruningCommand"`
 }
 
 type SelfHealingStatus struct {
