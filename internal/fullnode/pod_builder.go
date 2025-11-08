@@ -8,11 +8,11 @@ import (
 	"strings"
 	"sync"
 
+	cosmosv1 "github.com/bharvest-devops/cosmos-operator/api/v1"
+	"github.com/bharvest-devops/cosmos-operator/internal/healthcheck"
+	"github.com/bharvest-devops/cosmos-operator/internal/kube"
+	"github.com/bharvest-devops/cosmos-operator/internal/version"
 	"github.com/samber/lo"
-	cosmosv1 "github.com/strangelove-ventures/cosmos-operator/api/v1"
-	"github.com/strangelove-ventures/cosmos-operator/internal/healthcheck"
-	"github.com/strangelove-ventures/cosmos-operator/internal/kube"
-	"github.com/strangelove-ventures/cosmos-operator/internal/version"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -25,6 +25,8 @@ const (
 	healthCheckPort    = healthcheck.Port
 	mainContainer      = "node"
 	chainInitContainer = "chain-init"
+	chainTypeCosmos    = "cosmos"
+	chainTypeNamada    = "namada"
 )
 
 // PodBuilder builds corev1.Pods
@@ -95,7 +97,7 @@ func NewPodBuilder(crd *cosmosv1.CosmosFullNode) PodBuilder {
 					Name: "healthcheck",
 					// Available images: https://github.com/orgs/strangelove-ventures/packages?repo_name=cosmos-operator
 					// IMPORTANT: Must use v0.6.2 or later.
-					Image:   "ghcr.io/strangelove-ventures/cosmos-operator:" + version.DockerTag(),
+					Image:   "ghcr.io/bharvest-devops/cosmos-operator:" + version.DockerTag(),
 					Command: []string{"/manager", "healthcheck"},
 					Ports:   []corev1.ContainerPort{{ContainerPort: healthCheckPort, Protocol: corev1.ProtocolTCP}},
 					Resources: corev1.ResourceRequirements{
@@ -115,7 +117,7 @@ func NewPodBuilder(crd *cosmosv1.CosmosFullNode) PodBuilder {
 		// version check sidecar, runs on inverval in case the instance is halting for upgrade.
 		pod.Spec.Containers = append(pod.Spec.Containers, corev1.Container{
 			Name:    "version-check-interval",
-			Image:   "ghcr.io/strangelove-ventures/cosmos-operator:" + version.DockerTag(),
+			Image:   "ghcr.io/bharvest-devops/cosmos-operator:" + version.DockerTag(),
 			Command: versionCheckCmd,
 			Resources: corev1.ResourceRequirements{
 				Requests: corev1.ResourceList{
@@ -180,38 +182,9 @@ func podReadinessProbes(crd *cosmosv1.CosmosFullNode) []*corev1.Probe {
 // Build assigns the CosmosFullNode crd as the owner and returns a fully constructed pod.
 func (b PodBuilder) Build() (*corev1.Pod, error) {
 	pod := b.pod.DeepCopy()
-
 	if err := kube.ApplyStrategicMergePatch(pod, podPatch(b.crd)); err != nil {
 		return nil, err
 	}
-
-	if len(b.crd.Spec.ChainSpec.Versions) > 0 {
-		instanceHeight := uint64(0)
-		if height, ok := b.crd.Status.Height[pod.Name]; ok {
-			instanceHeight = height
-		}
-		var vrs *cosmosv1.ChainVersion
-		for _, v := range b.crd.Spec.ChainSpec.Versions {
-			v := v
-			if instanceHeight < v.UpgradeHeight {
-				break
-			}
-			vrs = &v
-		}
-		if vrs != nil {
-			setChainContainerImages(pod, vrs)
-		}
-	}
-
-	if o, ok := b.crd.Spec.InstanceOverrides[pod.Name]; ok {
-		if o.DisableStrategy != nil {
-			return nil, nil
-		}
-		if o.Image != "" {
-			setChainContainerImage(pod, o.Image)
-		}
-	}
-
 	kube.NormalizeMetadata(&pod.ObjectMeta)
 	return pod, nil
 }
@@ -223,6 +196,15 @@ const (
 	volSystemTmp = "vol-system-tmp" // Necessary for statesync or else you may see the error: ERR State sync failed err="failed to create chunk queue: unable to create temp dir for state sync chunks: stat /tmp: no such file or directory" module=statesync
 	volNodeKey   = "vol-node-key"   // Secret containing the node key.
 )
+
+func getCometbftDir(crd *cosmosv1.CosmosFullNode) string {
+	if crd.Spec.ChainSpec.ChainType == chainTypeCosmos || crd.Spec.ChainSpec.ChainType == "" {
+		return ""
+	} else if crd.Spec.ChainSpec.ChainType == chainTypeNamada {
+		return "/" + crd.Spec.ChainSpec.ChainID + "/cometbft"
+	}
+	return ""
+}
 
 // WithOrdinal updates adds name and other metadata to the pod using "ordinal" which is the pod's
 // ordered sequence. Pods have deterministic, consistent names similar to a StatefulSet instead of generated names.
@@ -237,6 +219,18 @@ func (b PodBuilder) WithOrdinal(ordinal int32) PodBuilder {
 
 	pod.Spec.Hostname = pod.Name
 	pod.Spec.Subdomain = b.crd.Name
+
+	var volConfigItems []corev1.KeyToPath
+	if b.crd.Spec.ChainSpec.ChainType == chainTypeNamada {
+		volConfigItems = []corev1.KeyToPath{
+			{Key: configOverlayFile, Path: configOverlayFile},
+		}
+	} else {
+		volConfigItems = []corev1.KeyToPath{
+			{Key: configOverlayFile, Path: configOverlayFile},
+			{Key: appOverlayFile, Path: appOverlayFile},
+		}
+	}
 
 	pod.Spec.Volumes = []corev1.Volume{
 		{
@@ -256,10 +250,7 @@ func (b PodBuilder) WithOrdinal(ordinal int32) PodBuilder {
 			VolumeSource: corev1.VolumeSource{
 				ConfigMap: &corev1.ConfigMapVolumeSource{
 					LocalObjectReference: corev1.LocalObjectReference{Name: instanceName(b.crd, ordinal)},
-					Items: []corev1.KeyToPath{
-						{Key: configOverlayFile, Path: configOverlayFile},
-						{Key: appOverlayFile, Path: appOverlayFile},
-					},
+					Items:                volConfigItems,
 				},
 			},
 		},
@@ -287,6 +278,16 @@ func (b PodBuilder) WithOrdinal(ordinal int32) PodBuilder {
 		{Name: volChainHome, MountPath: ChainHomeDir(b.crd)},
 		{Name: volSystemTmp, MountPath: systemTmpDir},
 	}
+
+	if b.crd.Spec.ChainSpec.ChainType == chainTypeNamada {
+		// Mounts for namada.
+		// If namadan ledger run, the node install masp packages under $HOME.
+		// Thus, If pod that runs namada has mounts for no $HOME, it throws "Permission denied"
+		mounts = []corev1.VolumeMount{
+			{Name: volChainHome, MountPath: workDir},
+			{Name: volSystemTmp, MountPath: systemTmpDir},
+		}
+	}
 	// Additional mounts only needed for init containers.
 	for i := range pod.Spec.InitContainers {
 		pod.Spec.InitContainers[i].VolumeMounts = append(mounts, []corev1.VolumeMount{
@@ -297,7 +298,7 @@ func (b PodBuilder) WithOrdinal(ordinal int32) PodBuilder {
 
 	// At this point, guaranteed to have at least 2 containers.
 	pod.Spec.Containers[0].VolumeMounts = append(mounts, corev1.VolumeMount{
-		Name: volNodeKey, MountPath: path.Join(ChainHomeDir(b.crd), "config", nodeKeyFile), SubPath: nodeKeyFile,
+		Name: volNodeKey, MountPath: path.Join(ChainHomeDir(b.crd), getCometbftDir(b.crd)+"/config", nodeKeyFile), SubPath: nodeKeyFile,
 	})
 	pod.Spec.Containers[1].VolumeMounts = []corev1.VolumeMount{
 		// The healthcheck sidecar needs access to the home directory so it can read disk usage.
@@ -312,11 +313,10 @@ func (b PodBuilder) WithOrdinal(ordinal int32) PodBuilder {
 }
 
 const (
-	workDir          = "/home/operator"
-	tmpDir           = workDir + "/.tmp"
-	tmpConfigDir     = workDir + "/.config"
-	infraToolImage   = "ghcr.io/strangelove-ventures/infra-toolkit"
-	infraToolVersion = "v0.1.6"
+	workDir        = "/home/operator"
+	tmpDir         = workDir + "/.tmp"
+	tmpConfigDir   = workDir + "/.config"
+	infraToolImage = "ghcr.io/bharvest-devops/infratoolkit:v0.1.0"
 
 	// Necessary for statesync
 	systemTmpDir = "/tmp"
@@ -324,7 +324,11 @@ const (
 
 // ChainHomeDir is the abs filepath for the chain's home directory.
 func ChainHomeDir(crd *cosmosv1.CosmosFullNode) string {
-	if home := crd.Spec.ChainSpec.HomeDir; home != "" {
+	home := crd.Spec.ChainSpec.HomeDir
+	if crd.Spec.ChainSpec.ChainType == chainTypeNamada && home == "" {
+		return workDir + "/namada"
+	}
+	if home != "" {
 		return path.Join(workDir, home)
 	}
 	return workDir + "/cosmos"
@@ -332,90 +336,123 @@ func ChainHomeDir(crd *cosmosv1.CosmosFullNode) string {
 
 func envVars(crd *cosmosv1.CosmosFullNode) []corev1.EnvVar {
 	home := ChainHomeDir(crd)
-	return []corev1.EnvVar{
+	envs := []corev1.EnvVar{
 		{Name: "HOME", Value: workDir},
 		{Name: "CHAIN_HOME", Value: home},
-		{Name: "GENESIS_FILE", Value: path.Join(home, "config", "genesis.json")},
-		{Name: "ADDRBOOK_FILE", Value: path.Join(home, "config", "addrbook.json")},
-		{Name: "CONFIG_DIR", Value: path.Join(home, "config")},
-		{Name: "DATA_DIR", Value: path.Join(home, "data")},
+		{Name: "GENESIS_FILE", Value: path.Join(home, getCometbftDir(crd)+"/config", "genesis.json")},
+		{Name: "ADDRBOOK_FILE", Value: path.Join(home, getCometbftDir(crd)+"/config", "addrbook.json")},
+		{Name: "CONFIG_DIR", Value: path.Join(home, getCometbftDir(crd), "/config")},
+		{Name: "DATA_DIR", Value: path.Join(home, getCometbftDir(crd), "/data")},
+		{Name: "CHAIN_ID", Value: crd.Spec.ChainSpec.ChainID},
+		{Name: "CHAIN_TYPE", Value: crd.Spec.ChainSpec.ChainType},
+	}
+	if len(crd.Spec.PodTemplate.Envs) != 0 {
+		for _, env := range crd.Spec.PodTemplate.Envs {
+			for k, v := range env {
+				envs = append(envs, corev1.EnvVar{
+					Name:  k,
+					Value: v,
+				},
+				)
+			}
+		}
+
+	}
+
+	return envs
+}
+
+func getCleanInitContainer(env []corev1.EnvVar, tpl cosmosv1.PodSpec) corev1.Container {
+	return corev1.Container{
+		Name:            "clean-init",
+		Image:           infraToolImage,
+		Command:         []string{"sh"},
+		Args:            []string{"-c", `if [ -d $HOME/.tmp/ ]; then rm -rf "$HOME/.tmp/*"; fi`},
+		Env:             env,
+		ImagePullPolicy: tpl.ImagePullPolicy,
+		WorkingDir:      workDir,
 	}
 }
 
-func resolveInfraToolImage() string {
-	return fmt.Sprintf("%s:%s", infraToolImage, infraToolVersion)
-}
-
-func initContainers(crd *cosmosv1.CosmosFullNode, moniker string) []corev1.Container {
-	tpl := crd.Spec.PodTemplate
-	binary := crd.Spec.ChainSpec.Binary
-	genesisCmd, genesisArgs := DownloadGenesisCommand(crd.Spec.ChainSpec)
-	addrbookCmd, addrbookArgs := DownloadAddrbookCommand(crd.Spec.ChainSpec)
-	env := envVars(crd)
-
-	initCmd := fmt.Sprintf("%s init --chain-id %s %s", binary, crd.Spec.ChainSpec.ChainID, moniker)
-	if len(crd.Spec.ChainSpec.AdditionalInitArgs) > 0 {
-		initCmd += " " + strings.Join(crd.Spec.ChainSpec.AdditionalInitArgs, " ")
-	}
-	required := []corev1.Container{
-		{
-			Name:            "clean-init",
-			Image:           resolveInfraToolImage(),
-			Command:         []string{"sh"},
-			Args:            []string{"-c", `rm -rf "$HOME/.tmp/*"`},
-			Env:             env,
-			ImagePullPolicy: tpl.ImagePullPolicy,
-			WorkingDir:      workDir,
-		},
-		{
-			Name:    chainInitContainer,
-			Image:   tpl.Image,
-			Command: []string{"sh"},
-			Args: []string{"-c",
-				fmt.Sprintf(`
-set -eu
-if [ ! -d "$CHAIN_HOME/data" ]; then
+func getCosmosChainInitContainer(env []corev1.EnvVar, tpl cosmosv1.PodSpec, initCmd string) corev1.Container {
+	return corev1.Container{
+		Name:    chainInitContainer,
+		Image:   tpl.Image,
+		Command: []string{"sh"},
+		Args: []string{"-c",
+			fmt.Sprintf(`
+set -u
+if [ ! -d "$DATA_DIR" ]; then
 	echo "Initializing chain..."
-	%s --home "$CHAIN_HOME"
+	%s --home "$CHAIN_HOME" || true
 else
 	echo "Skipping chain init; already initialized."
 fi
-
 echo "Initializing into tmp dir for downstream processing..."
-%s --home "$HOME/.tmp"
+%s --home "$HOME/.tmp" || true
 `, initCmd, initCmd),
-			},
-			Env:             env,
-			ImagePullPolicy: tpl.ImagePullPolicy,
-			WorkingDir:      workDir,
 		},
+		Env:             env,
+		ImagePullPolicy: tpl.ImagePullPolicy,
+		WorkingDir:      workDir,
+	}
+}
 
-		{
-			Name:            "genesis-init",
-			Image:           resolveInfraToolImage(),
-			Command:         []string{genesisCmd},
-			Args:            genesisArgs,
-			Env:             env,
-			ImagePullPolicy: tpl.ImagePullPolicy,
-			WorkingDir:      workDir,
-		},
-		{
-			Name:            "addrbook-init",
-			Image:           resolveInfraToolImage(),
-			Command:         []string{addrbookCmd},
-			Args:            addrbookArgs,
-			Env:             env,
-			ImagePullPolicy: tpl.ImagePullPolicy,
-			WorkingDir:      workDir,
-		},
-		{
-			Name:    "config-merge",
-			Image:   resolveInfraToolImage(),
-			Command: []string{"sh"},
-			Args: []string{"-c",
-				`
+func getNamadaChainInitContainer(env []corev1.EnvVar, tpl cosmosv1.PodSpec) corev1.Container {
+	return corev1.Container{
+		Name:    chainInitContainer,
+		Image:   tpl.Image,
+		Command: []string{"sh"},
+		Args: []string{"-c",
+			fmt.Sprintf(`
 set -eu
-CONFIG_DIR="$CHAIN_HOME/config"
+echo "Initializing into tmp dir for downstream processing..."
+
+mkdir -p -m 0777 $CHAIN_HOME/$CHAIN_ID/cometbft/config
+mkdir -p $HOME/.tmp/config
+
+cp $CHAIN_HOME/$CHAIN_ID/default-config.toml $CHAIN_HOME/$CHAIN_ID/config.toml
+cat "$CHAIN_HOME/$CHAIN_ID/config.toml" > "$HOME/.tmp/config/config.toml"
+`),
+		},
+		Env:             env,
+		ImagePullPolicy: tpl.ImagePullPolicy,
+		WorkingDir:      workDir,
+	}
+}
+
+func getGenesisInitContainer(env []corev1.EnvVar, tpl cosmosv1.PodSpec, genesisCmd string, genesisArgs []string, genesisImage string) corev1.Container {
+	return corev1.Container{
+		Name:            "genesis-init",
+		Image:           genesisImage,
+		Command:         []string{genesisCmd},
+		Args:            genesisArgs,
+		Env:             env,
+		ImagePullPolicy: tpl.ImagePullPolicy,
+		WorkingDir:      workDir,
+	}
+}
+
+func getAddrbookInitContainer(env []corev1.EnvVar, tpl cosmosv1.PodSpec, addrbookCmd string, addrbookArgs []string) corev1.Container {
+	return corev1.Container{
+		Name:            "addrbook-init",
+		Image:           infraToolImage,
+		Command:         []string{addrbookCmd},
+		Args:            addrbookArgs,
+		Env:             env,
+		ImagePullPolicy: tpl.ImagePullPolicy,
+		WorkingDir:      workDir,
+	}
+}
+
+func getConfigMergeContainer(env []corev1.EnvVar, tpl cosmosv1.PodSpec) corev1.Container {
+	return corev1.Container{
+		Name:    "config-merge",
+		Image:   infraToolImage,
+		Command: []string{"sh"},
+		Args: []string{"-c",
+			`
+set -eu
 TMP_DIR="$HOME/.tmp/config"
 OVERLAY_DIR="$HOME/.config"
 
@@ -427,33 +464,82 @@ rm -rf "$CONFIG_DIR/node_key.json"
 
 echo "Merging config..."
 set -x
+if [ "$CHAIN_TYPE" = "` + chainTypeCosmos + `" ] ; then
+	config-merge -f toml -a overwrite "$TMP_DIR/config.toml" "$OVERLAY_DIR/config-overlay.toml" > "$CONFIG_DIR/config.toml"
+	config-merge -f toml -a overwrite "$TMP_DIR/app.toml" "$OVERLAY_DIR/app-overlay.toml" > "$CONFIG_DIR/app.toml"
+elif [ "$CHAIN_TYPE" = "` + chainTypeNamada + `" ]; then
+	config-merge -f toml -a overwrite "$TMP_DIR/config.toml" "$OVERLAY_DIR/config-overlay.toml" > "$CHAIN_HOME/$CHAIN_ID/config.toml"
+fi
 
-if [ -f "$TMP_DIR/config.toml" ]; then
-	config-merge -f toml "$TMP_DIR/config.toml" "$OVERLAY_DIR/config-overlay.toml" > "$CONFIG_DIR/config.toml"
-fi
-if [ -f "$TMP_DIR/app.toml" ]; then
-	config-merge -f toml "$TMP_DIR/app.toml" "$OVERLAY_DIR/app-overlay.toml" > "$CONFIG_DIR/app.toml"
-fi
 `,
-			},
-			Env:             env,
-			ImagePullPolicy: tpl.ImagePullPolicy,
-			WorkingDir:      workDir,
 		},
+		Env:             env,
+		ImagePullPolicy: tpl.ImagePullPolicy,
+		WorkingDir:      workDir,
+	}
+}
+
+func initContainers(crd *cosmosv1.CosmosFullNode, moniker string) []corev1.Container {
+	tpl := crd.Spec.PodTemplate
+	binary := crd.Spec.ChainSpec.Binary
+	genesisCmd, genesisArgs := DownloadGenesisCommand(crd.Spec.ChainSpec)
+	addrbookCmd, addrbookArgs := DownloadAddrbookCommand(crd.Spec.ChainSpec)
+	env := envVars(crd)
+
+	var required []corev1.Container
+	if crd.Spec.ChainSpec.ChainType == chainTypeCosmos || crd.Spec.ChainSpec.ChainType == "" {
+		initCmd := fmt.Sprintf("%s init --chain-id %s %s", binary, crd.Spec.ChainSpec.ChainID, moniker)
+		if len(crd.Spec.ChainSpec.AdditionalInitArgs) > 0 {
+			initCmd += " " + strings.Join(crd.Spec.ChainSpec.AdditionalInitArgs, " ")
+		}
+		required = append(required, getCleanInitContainer(env, tpl))
+		required = append(required, getCosmosChainInitContainer(env, tpl, initCmd))
+		required = append(required, getGenesisInitContainer(env, tpl, genesisCmd, genesisArgs, infraToolImage))
+		required = append(required, getAddrbookInitContainer(env, tpl, addrbookCmd, addrbookArgs))
+		required = append(required, getConfigMergeContainer(env, tpl))
+
+		if willRestoreFromSnapshot(crd) {
+			cmd, args := DownloadSnapshotCommand(crd.Spec.ChainSpec)
+			required = append(required, corev1.Container{
+				Name:            "snapshot-restore",
+				Image:           infraToolImage,
+				Command:         []string{cmd},
+				Args:            args,
+				Env:             env,
+				ImagePullPolicy: tpl.ImagePullPolicy,
+				WorkingDir:      workDir,
+			})
+		}
+	} else if crd.Spec.ChainSpec.ChainType == chainTypeNamada {
+		required = append(required, getCleanInitContainer(env, tpl))
+		required = append(required, getGenesisInitContainer(env, tpl, genesisCmd, genesisArgs, crd.Spec.PodTemplate.Image))
+		required = append(required, getNamadaChainInitContainer(env, tpl))
+		required = append(required, getAddrbookInitContainer(env, tpl, addrbookCmd, addrbookArgs))
+		required = append(required, getConfigMergeContainer(env, tpl))
+	}
+	allowPrivilege := false
+	for _, c := range required {
+		c.SecurityContext = &corev1.SecurityContext{
+			RunAsUser:                ptr(int64(1025)),
+			RunAsGroup:               ptr(int64(1025)),
+			RunAsNonRoot:             ptr(true),
+			AllowPrivilegeEscalation: &allowPrivilege,
+			Privileged:               &allowPrivilege,
+			SeccompProfile:           &corev1.SeccompProfile{Type: corev1.SeccompProfileTypeRuntimeDefault},
+		}
 	}
 
-	if willRestoreFromSnapshot(crd) {
-		cmd, args := DownloadSnapshotCommand(crd.Spec.ChainSpec)
-		required = append(required, corev1.Container{
-			Name:            "snapshot-restore",
-			Image:           resolveInfraToolImage(),
-			Command:         []string{cmd},
-			Args:            args,
-			Env:             env,
-			ImagePullPolicy: tpl.ImagePullPolicy,
-			WorkingDir:      workDir,
-		})
-	}
+	//if true {
+	//	required = append(required, corev1.Container{
+	//		Name:            "cosmovisor-init",
+	//		Image:           infraToolImage,
+	//		Command:         []string{"/bin/cosmovisor"},
+	//		Args:            []string{"init", "/bin/" + binary},
+	//		Env:             env,
+	//		ImagePullPolicy: tpl.ImagePullPolicy,
+	//		WorkingDir:      workDir,
+	//	})
+	//}
 
 	versionCheckCmd := []string{"/manager", "versioncheck"}
 	if crd.Spec.ChainSpec.DatabaseBackend != nil {
@@ -467,7 +553,7 @@ fi
 	// After the status is patched, the pod will be restarted with the correct image.
 	required = append(required, corev1.Container{
 		Name:    "version-check",
-		Image:   "ghcr.io/strangelove-ventures/cosmos-operator:" + version.DockerTag(),
+		Image:   "ghcr.io/bharvest-devops/cosmos-operator:" + version.DockerTag(),
 		Command: versionCheckCmd,
 		Resources: corev1.ResourceRequirements{
 			Requests: corev1.ResourceList{
@@ -490,6 +576,12 @@ func startCmdAndArgs(crd *cosmosv1.CosmosFullNode) (string, []string) {
 		args               = startCommandArgs(crd)
 		privvalSleep int32 = 10
 	)
+
+	// Determine blockchain types to operate
+	if crd.Spec.ChainSpec.ChainType == chainTypeNamada {
+		binary = "sh"
+	}
+
 	if v := crd.Spec.ChainSpec.PrivvalSleepSeconds; v != nil {
 		privvalSleep = *v
 	}
@@ -506,7 +598,13 @@ func startCmdAndArgs(crd *cosmosv1.CosmosFullNode) (string, []string) {
 func startCommandArgs(crd *cosmosv1.CosmosFullNode) []string {
 	args := []string{"start", "--home", ChainHomeDir(crd)}
 	cfg := crd.Spec.ChainSpec
-	if cfg.SkipInvariants {
+
+	if crd.Spec.ChainSpec.ChainType == chainTypeNamada {
+		args = []string{"-c", "namada --base-dir " + ChainHomeDir(crd) + " --chain-id " + crd.Spec.ChainSpec.ChainID + " node ledger run"}
+		return args
+	}
+
+	if cfg.CosmosSDK.SkipInvariants {
 		args = append(args, "--x-crisis-skip-assert-invariants")
 	}
 	if lvl := cfg.LogLevel; lvl != nil {
@@ -522,7 +620,7 @@ func startCommandArgs(crd *cosmosv1.CosmosFullNode) []string {
 }
 
 func willRestoreFromSnapshot(crd *cosmosv1.CosmosFullNode) bool {
-	return crd.Spec.ChainSpec.SnapshotURL != nil || crd.Spec.ChainSpec.SnapshotScript != nil
+	return crd.Spec.ChainSpec.CosmosSDK.SnapshotURL != nil || crd.Spec.ChainSpec.CosmosSDK.SnapshotScript != nil
 }
 
 func podPatch(crd *cosmosv1.CosmosFullNode) *corev1.Pod {
@@ -553,4 +651,51 @@ func PVCName(pod *corev1.Pod) string {
 		return ""
 	}
 	return found.PersistentVolumeClaim.ClaimName
+}
+
+const PRUNING_POD_IMAGE_DEFAULT = "ghcr.io/bharvest-devops/cosmos-pruner:latest"
+
+func (p *PrunerPod) BuildPruningContainer(crd *cosmosv1.CosmosFullNode) *corev1.Pod {
+	if p == nil {
+		return nil
+	}
+
+	if crd.Spec.SelfHeal.PruningSpec == nil {
+		return nil
+	}
+	var (
+		pruningImage   = crd.Spec.SelfHeal.PruningSpec.Image
+		pruningCommand = crd.Spec.SelfHeal.PruningSpec.PruningCommand
+		probes         = podReadinessProbes(crd)
+	)
+	if pruningImage == "" {
+		pruningImage = PRUNING_POD_IMAGE_DEFAULT
+	}
+	if pruningCommand == "" {
+		pruningCommand = "cosmos-pruner compact /home/operator/cosmos/data/ 2>&1"
+	}
+
+	oldPod := ptr(corev1.Pod(*p)).DeepCopy()
+
+	p.Spec.InitContainers = nil
+	p.Name = GetPrunerPodName(p.Name)
+	p.Spec.Containers = []corev1.Container{
+		{
+			Name:           GetPrunerPodName(p.Name),
+			Image:          pruningImage,
+			Command:        []string{"/bin/sh"},
+			Args:           []string{"-c", pruningCommand},
+			WorkingDir:     "/home/operator",
+			VolumeMounts:   oldPod.Spec.Containers[0].VolumeMounts,
+			ReadinessProbe: probes[0],
+		},
+	}
+	p.Spec.RestartPolicy = corev1.RestartPolicyNever
+
+	newPod := corev1.Pod(*p)
+	return ptr(newPod)
+}
+
+func GetPrunerPodName(podName string) string {
+	return fmt.Sprintf("%s-%s", podName, "pruner")
 }
