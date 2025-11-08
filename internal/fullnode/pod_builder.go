@@ -356,6 +356,7 @@ else
 	echo "Skipping chain init; already initialized."
 fi
 echo "Initializing into tmp dir for downstream processing..."
+export HOME=/tmp
 %s --home "$HOME/.tmp" || true
 `, initCmd, initCmd),
 		},
