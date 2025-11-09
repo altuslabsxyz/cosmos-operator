@@ -317,7 +317,8 @@ func ChainHomeDir(crd *cosmosv1.CosmosFullNode) string {
 func envVars(crd *cosmosv1.CosmosFullNode) []corev1.EnvVar {
 	home := ChainHomeDir(crd)
 	envs := []corev1.EnvVar{
-		{Name: "HOME", Value: workDir},
+		{Name: "HOME", Value: systemTmpDir},
+		{Name: "WORK_DIR", Value: workDir},
 		{Name: "CHAIN_HOME", Value: home},
 		{Name: "GENESIS_FILE", Value: path.Join(home, getCometbftDir(crd)+"/config", "genesis.json")},
 		{Name: "ADDRBOOK_FILE", Value: path.Join(home, getCometbftDir(crd)+"/config", "addrbook.json")},
@@ -334,7 +335,7 @@ func getCleanInitContainer(env []corev1.EnvVar, tpl cosmosv1.PodSpec) corev1.Con
 		Name:            "clean-init",
 		Image:           infraToolImage,
 		Command:         []string{"sh"},
-		Args:            []string{"-c", `if [ -d $HOME/.tmp/ ]; then rm -rf "$HOME/.tmp/*"; fi`},
+		Args:            []string{"-c", `if [ -d $WORK_DIR/.tmp/ ]; then rm -rf "$WORK_DIR/.tmp/*"; fi`},
 		Env:             env,
 		ImagePullPolicy: tpl.ImagePullPolicy,
 		WorkingDir:      workDir,
@@ -356,7 +357,7 @@ else
 	echo "Skipping chain init; already initialized."
 fi
 echo "Initializing into tmp dir for downstream processing..."
-HOME=/tmp %s --home "/home/operator/.tmp" || true
+%s --home "$WORK_DIR/.tmp" || true
 `, initCmd, initCmd),
 		},
 		Env:             env,
@@ -421,8 +422,8 @@ func getConfigMergeContainer(env []corev1.EnvVar, tpl cosmosv1.PodSpec) corev1.C
 		Args: []string{"-c",
 			`
 set -eu
-TMP_DIR="$HOME/.tmp/config"
-OVERLAY_DIR="$HOME/.config"
+TMP_DIR="$WORK_DIR/.tmp/config"
+OVERLAY_DIR="$WORK_DIR/.config"
 
 # This is a hack to prevent adding another init container.
 # Ideally, this step is not concerned with merging config, so it would live elsewhere.
