@@ -70,12 +70,8 @@ func NewPodBuilder(crd *cosmosv1.CosmosFullNode) PodBuilder {
 		Spec: corev1.PodSpec{
 			ServiceAccountName: serviceAccountName(crd),
 			SecurityContext: &corev1.PodSecurityContext{
-				RunAsUser:           ptr(int64(1025)),
-				RunAsGroup:          ptr(int64(1025)),
-				RunAsNonRoot:        ptr(true),
 				FSGroup:             ptr(int64(1025)),
 				FSGroupChangePolicy: ptr(corev1.FSGroupChangeOnRootMismatch),
-				SeccompProfile:      &corev1.SeccompProfile{Type: corev1.SeccompProfileTypeRuntimeDefault},
 			},
 			Subdomain: crd.Name,
 			Containers: []corev1.Container{
@@ -95,6 +91,8 @@ func NewPodBuilder(crd *cosmosv1.CosmosFullNode) PodBuilder {
 					ImagePullPolicy: tpl.ImagePullPolicy,
 					WorkingDir:      workDir,
 					SecurityContext: &corev1.SecurityContext{
+						RunAsUser:                ptr(int64(1025)),
+						RunAsGroup:               ptr(int64(1025)),
 						RunAsNonRoot:             ptr(true),
 						AllowPrivilegeEscalation: ptr(false),
 					},
@@ -116,6 +114,8 @@ func NewPodBuilder(crd *cosmosv1.CosmosFullNode) PodBuilder {
 					ReadinessProbe:  probes[1],
 					ImagePullPolicy: tpl.ImagePullPolicy,
 					SecurityContext: &corev1.SecurityContext{
+						RunAsUser:                ptr(int64(1025)),
+						RunAsGroup:               ptr(int64(1025)),
 						RunAsNonRoot:             ptr(true),
 						AllowPrivilegeEscalation: ptr(false),
 					},
@@ -140,6 +140,8 @@ func NewPodBuilder(crd *cosmosv1.CosmosFullNode) PodBuilder {
 			ImagePullPolicy: tpl.ImagePullPolicy,
 			WorkingDir:      workDir,
 			SecurityContext: &corev1.SecurityContext{
+				RunAsUser:                ptr(int64(1025)),
+				RunAsGroup:               ptr(int64(1025)),
 				RunAsNonRoot:             ptr(true),
 				AllowPrivilegeEscalation: ptr(false),
 			},
@@ -494,7 +496,6 @@ func initContainers(crd *cosmosv1.CosmosFullNode, moniker string) []corev1.Conta
 			RunAsNonRoot:             ptr(true),
 			AllowPrivilegeEscalation: &allowPrivilege,
 			Privileged:               &allowPrivilege,
-			SeccompProfile:           &corev1.SeccompProfile{Type: corev1.SeccompProfileTypeRuntimeDefault},
 		}
 	}
 
