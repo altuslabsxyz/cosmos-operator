@@ -94,6 +94,10 @@ func NewPodBuilder(crd *cosmosv1.CosmosFullNode) PodBuilder {
 					ReadinessProbe:  probes[0],
 					ImagePullPolicy: tpl.ImagePullPolicy,
 					WorkingDir:      workDir,
+					SecurityContext: &corev1.SecurityContext{
+						RunAsNonRoot:             ptr(true),
+						AllowPrivilegeEscalation: ptr(false),
+					},
 				},
 				// healthcheck sidecar
 				{
@@ -111,6 +115,10 @@ func NewPodBuilder(crd *cosmosv1.CosmosFullNode) PodBuilder {
 					},
 					ReadinessProbe:  probes[1],
 					ImagePullPolicy: tpl.ImagePullPolicy,
+					SecurityContext: &corev1.SecurityContext{
+						RunAsNonRoot:             ptr(true),
+						AllowPrivilegeEscalation: ptr(false),
+					},
 				},
 			},
 		},
@@ -131,7 +139,10 @@ func NewPodBuilder(crd *cosmosv1.CosmosFullNode) PodBuilder {
 			Env:             envVars(crd),
 			ImagePullPolicy: tpl.ImagePullPolicy,
 			WorkingDir:      workDir,
-			SecurityContext: &corev1.SecurityContext{},
+			SecurityContext: &corev1.SecurityContext{
+				RunAsNonRoot:             ptr(true),
+				AllowPrivilegeEscalation: ptr(false),
+			},
 		})
 	}
 
@@ -476,8 +487,8 @@ func initContainers(crd *cosmosv1.CosmosFullNode, moniker string) []corev1.Conta
 		})
 	}
 	allowPrivilege := false
-	for _, c := range required {
-		c.SecurityContext = &corev1.SecurityContext{
+	for i := range required {
+		required[i].SecurityContext = &corev1.SecurityContext{
 			RunAsUser:                ptr(int64(1025)),
 			RunAsGroup:               ptr(int64(1025)),
 			RunAsNonRoot:             ptr(true),
