@@ -93,6 +93,7 @@ func (r *RateLimiter) RecordAttempt(recovery *cosmosv1.StuckHeightRecovery) {
 	if recovery.Status.RateLimitWindowStart == nil {
 		recovery.Status.RateLimitWindowStart = &now
 		recovery.Status.RecoveryAttempts = 1
+		recovery.Status.LastRecoveryTime = &now
 		return
 	}
 
