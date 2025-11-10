@@ -225,6 +225,15 @@ func startManager(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("unable to create ScheduledVolumeSnapshot controller: %w", err)
 	}
 
+	// StuckHeightRecovery
+	if err = controllers.NewStuckHeightRecoveryReconciler(
+		mgr.GetClient(),
+		mgr.GetScheme(),
+		mgr.GetEventRecorderFor("StuckHeightRecovery"),
+	).SetupWithManager(mgr); err != nil {
+		return fmt.Errorf("unable to create StuckHeightRecovery controller: %w", err)
+	}
+
 	//+kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
