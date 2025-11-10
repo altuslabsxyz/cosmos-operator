@@ -54,6 +54,7 @@ rules:
   - cosmosfullnodes
   - scheduledvolumesnapshots
   - statefuljobs
+  - stuckheightrecoveries
   verbs:
   - create
   - delete
@@ -68,6 +69,7 @@ rules:
   - cosmosfullnodes/finalizers
   - scheduledvolumesnapshots/finalizers
   - statefuljobs/finalizers
+  - stuckheightrecoveries/finalizers
   verbs:
   - update
 - apiGroups:
@@ -76,6 +78,7 @@ rules:
   - cosmosfullnodes/status
   - scheduledvolumesnapshots/status
   - statefuljobs/status
+  - stuckheightrecoveries/status
   verbs:
   - get
   - patch
