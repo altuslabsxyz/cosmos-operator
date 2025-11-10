@@ -3,10 +3,10 @@ package fullnode
 import (
 	"fmt"
 
-	"github.com/samber/lo"
 	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
 	"github.com/b-harvest/cosmos-operator/internal/diff"
 	"github.com/b-harvest/cosmos-operator/internal/kube"
+	"github.com/samber/lo"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
@@ -135,6 +135,18 @@ func rpcService(crd *cosmosv1.CosmosFullNode) *corev1.Service {
 			Protocol:   corev1.ProtocolTCP,
 			Port:       apiPort,
 			TargetPort: intstr.FromString("api"),
+		},
+		{
+			Name:       "jsonrpc",
+			Protocol:   corev1.ProtocolTCP,
+			Port:       jsonrpcPort,
+			TargetPort: intstr.FromString("jsonrpc"),
+		},
+		{
+			Name:       "jsonrpc-ws",
+			Protocol:   corev1.ProtocolTCP,
+			Port:       jsonrpcWsPort,
+			TargetPort: intstr.FromString("jsonrpc-ws"),
 		},
 		{
 			Name:       "rosetta",
