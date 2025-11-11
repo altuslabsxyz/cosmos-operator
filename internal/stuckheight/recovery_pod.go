@@ -123,6 +123,12 @@ func (b *RecoveryPodBuilder) BuildPod(
 
 	recoveryPodName := fmt.Sprintf("%s-recovery-%s", recovery.Name, podName)
 
+	// Image pull secrets
+	var imagePullSecrets []corev1.LocalObjectReference
+	if podTemplate != nil && len(podTemplate.ImagePullSecrets) > 0 {
+		imagePullSecrets = podTemplate.ImagePullSecrets
+	}
+
 	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      recoveryPodName,
@@ -134,7 +140,8 @@ func (b *RecoveryPodBuilder) BuildPod(
 			},
 		},
 		Spec: corev1.PodSpec{
-			RestartPolicy: corev1.RestartPolicyNever,
+			RestartPolicy:    corev1.RestartPolicyNever,
+			ImagePullSecrets: imagePullSecrets,
 			Containers: []corev1.Container{
 				{
 					Name:            "recovery",

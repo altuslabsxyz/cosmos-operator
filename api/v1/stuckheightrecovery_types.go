@@ -91,6 +91,10 @@ type RecoveryPodTemplate struct {
 	// +optional
 	ImagePullPolicy corev1.PullPolicy `json:"imagePullPolicy,omitempty"`
 
+	// Image pull secrets
+	// +optional
+	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty"`
+
 	// Resources for the recovery pod
 	// +optional
 	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
