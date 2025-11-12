@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestBuildPVCs(t *testing.T) {
@@ -223,6 +224,125 @@ func TestBuildPVCs(t *testing.T) {
 				require.Equal(t, want.Storage().Value(), pvcs[0].Object().Spec.Resources.Requests.Storage().Value(), tt)
 			}
 		})
+	})
+
+	t.Run("preserve existing dataSource", func(t *testing.T) {
+		crd := defaultCRD()
+		crd.Name = "hub"
+		crd.Spec.Replicas = 2
+
+		// Create initial PVCs with dataSource
+		existingDataSource := &corev1.TypedLocalObjectReference{
+			Kind: "PersistentVolumeClaim",
+			Name: "restored-pvc",
+		}
+
+		existingPVC1 := &corev1.PersistentVolumeClaim{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "pvc-hub-0",
+				Namespace: crd.Namespace,
+			},
+			Spec: corev1.PersistentVolumeClaimSpec{
+				DataSource:       existingDataSource,
+				StorageClassName: ptr("longhorn"),
+			},
+			Status: corev1.PersistentVolumeClaimStatus{
+				Phase: corev1.ClaimBound,
+				Capacity: corev1.ResourceList{
+					corev1.ResourceStorage: resource.MustParse("100Gi"),
+				},
+			},
+		}
+
+		existingPVC2 := &corev1.PersistentVolumeClaim{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "pvc-hub-1",
+				Namespace: crd.Namespace,
+			},
+			Spec: corev1.PersistentVolumeClaimSpec{
+				StorageClassName: ptr("longhorn"),
+			},
+			Status: corev1.PersistentVolumeClaimStatus{
+				Phase: corev1.ClaimBound,
+				Capacity: corev1.ResourceList{
+					corev1.ResourceStorage: resource.MustParse("100Gi"),
+				},
+			},
+		}
+
+		currentPVCs := []*corev1.PersistentVolumeClaim{existingPVC1, existingPVC2}
+
+		// Build PVCs without any dataSource overrides
+		pvcs := BuildPVCs(&crd, map[int32]*dataSource{}, currentPVCs)
+		require.Len(t, pvcs, 2)
+
+		// First PVC should preserve its dataSource
+		got1 := pvcs[0].Object()
+		require.Equal(t, "pvc-hub-0", got1.Name)
+		require.NotNil(t, got1.Spec.DataSource)
+		require.Equal(t, existingDataSource, got1.Spec.DataSource)
+
+		// Second PVC should have no dataSource
+		got2 := pvcs[1].Object()
+		require.Equal(t, "pvc-hub-1", got2.Name)
+		require.Nil(t, got2.Spec.DataSource)
+	})
+
+	t.Run("instance override with dataSource", func(t *testing.T) {
+		crd := defaultCRD()
+		crd.Name = "hub"
+		crd.Spec.Replicas = 1
+
+		// Existing PVC without dataSource
+		existingPVC := &corev1.PersistentVolumeClaim{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "pvc-hub-0",
+				Namespace: crd.Namespace,
+			},
+			Spec: corev1.PersistentVolumeClaimSpec{
+				StorageClassName: ptr("longhorn"),
+			},
+			Status: corev1.PersistentVolumeClaimStatus{
+				Phase: corev1.ClaimBound,
+				Capacity: corev1.ResourceList{
+					corev1.ResourceStorage: resource.MustParse("100Gi"),
+				},
+			},
+		}
+
+		// Apply instanceOverride with new dataSource
+		newDataSource := &corev1.TypedLocalObjectReference{
+			Kind: "PersistentVolumeClaim",
+			Name: "new-restored-pvc",
+		}
+
+		crd.Spec.InstanceOverrides = map[string]cosmosv1.InstanceOverridesSpec{
+			"hub-0": {
+				VolumeClaimTemplate: &cosmosv1.PersistentVolumeClaimSpec{
+					StorageClassName: "longhorn",
+					DataSource:       newDataSource,
+					Resources: corev1.ResourceRequirements{
+						Requests: corev1.ResourceList{
+							corev1.ResourceStorage: resource.MustParse("100Gi"),
+						},
+					},
+				},
+			},
+		}
+
+		// Build PVCs with override dataSource
+		pvcs := BuildPVCs(&crd, map[int32]*dataSource{
+			0: {
+				ref:  newDataSource,
+				size: resource.MustParse("100Gi"),
+			},
+		}, []*corev1.PersistentVolumeClaim{existingPVC})
+
+		require.Len(t, pvcs, 1)
+		got := pvcs[0].Object()
+		require.Equal(t, "pvc-hub-0", got.Name)
+		require.NotNil(t, got.Spec.DataSource)
+		require.Equal(t, newDataSource, got.Spec.DataSource)
 	})
 
 	test.HasTypeLabel(t, func(crd cosmosv1.CosmosFullNode) []map[string]string {
