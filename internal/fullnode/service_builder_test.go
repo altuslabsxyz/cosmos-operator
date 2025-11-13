@@ -5,11 +5,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/samber/lo"
 	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
 	"github.com/b-harvest/cosmos-operator/internal/diff"
 	"github.com/b-harvest/cosmos-operator/internal/kube"
 	"github.com/b-harvest/cosmos-operator/internal/test"
+	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -41,8 +41,8 @@ func TestBuildServices(t *testing.T) {
 				"app.kubernetes.io/component":  "p2p",
 				"app.kubernetes.io/version":    "v6.0.0",
 				"app.kubernetes.io/instance":   fmt.Sprintf("terra-%d", i),
-				"cosmos.bharvest.io/network":  "testnet",
-				"cosmos.bharvest.io/type":     "FullNode",
+				"cosmos.bharvest.io/network":   "testnet",
+				"cosmos.bharvest.io/type":      "FullNode",
 			}
 			require.Equal(t, wantLabels, p2p.Labels)
 
@@ -186,12 +186,12 @@ func TestBuildServices(t *testing.T) {
 			"app.kubernetes.io/name":       "terra",
 			"app.kubernetes.io/component":  "rpc",
 			"app.kubernetes.io/version":    "v6.0.0",
-			"cosmos.bharvest.io/network":  "testnet",
-			"cosmos.bharvest.io/type":     "FullNode",
+			"cosmos.bharvest.io/network":   "testnet",
+			"cosmos.bharvest.io/type":      "FullNode",
 		}
 		require.Equal(t, wantLabels, rpc.Labels)
 
-		require.Equal(t, 5, len(rpc.Spec.Ports))
+		require.Equal(t, 7, len(rpc.Spec.Ports))
 		// All ports minus prometheus and p2p.
 		want := []corev1.ServicePort{
 			{
@@ -199,6 +199,18 @@ func TestBuildServices(t *testing.T) {
 				Protocol:   corev1.ProtocolTCP,
 				Port:       1317,
 				TargetPort: intstr.FromString("api"),
+			},
+			{
+				Name:       "jsonrpc",
+				Protocol:   corev1.ProtocolTCP,
+				Port:       8545,
+				TargetPort: intstr.FromString("jsonrpc"),
+			},
+			{
+				Name:       "jsonrpc-ws",
+				Protocol:   corev1.ProtocolTCP,
+				Port:       8546,
+				TargetPort: intstr.FromString("jsonrpc-ws"),
 			},
 			{
 				Name:       "rosetta",

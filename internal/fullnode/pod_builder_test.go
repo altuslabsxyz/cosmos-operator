@@ -4,10 +4,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/samber/lo"
 	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
 	"github.com/b-harvest/cosmos-operator/internal/kube"
 	"github.com/b-harvest/cosmos-operator/internal/test"
+	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -70,8 +70,8 @@ func TestPodBuilder(t *testing.T) {
 			"app.kubernetes.io/created-by": "cosmos-operator",
 			"app.kubernetes.io/name":       "osmosis",
 			"app.kubernetes.io/version":    "v1.2.3",
-			"cosmos.bharvest.io/network":  "mainnet",
-			"cosmos.bharvest.io/type":     "FullNode",
+			"cosmos.bharvest.io/network":   "mainnet",
+			"cosmos.bharvest.io/type":      "FullNode",
 		}
 		require.Equal(t, wantLabels, pod.Labels)
 		require.NotNil(t, pod.Annotations)
@@ -108,7 +108,7 @@ func TestPodBuilder(t *testing.T) {
 		require.NoError(t, err)
 		ports := pod.Spec.Containers[0].Ports
 
-		require.Equal(t, 7, len(ports))
+		require.Equal(t, 9, len(ports))
 
 		for i, tt := range []struct {
 			Name string
@@ -119,6 +119,8 @@ func TestPodBuilder(t *testing.T) {
 			{"grpc", 9090},
 			{"prometheus", 26660},
 			{"p2p", 26656},
+			{"jsonrpc", 8545},
+			{"jsonrpc-ws", 8546},
 			{"rpc", 26657},
 			{"grpc-web", 9091},
 		} {
@@ -138,7 +140,7 @@ func TestPodBuilder(t *testing.T) {
 		require.NoError(t, err)
 		ports := pod.Spec.Containers[0].Ports
 
-		require.Equal(t, 8, len(ports))
+		require.Equal(t, 10, len(ports))
 
 		got, _ := lo.Last(ports)
 
