@@ -38,7 +38,6 @@ func BuildPods(crd *cosmosv1.CosmosFullNode, cksums ConfigChecksums) ([]diff.Res
 	return pods, nil
 }
 
-//nolint:unused // Reserved for future version upgrade feature
 func setChainContainerImages(pod *corev1.Pod, v *cosmosv1.ChainVersion) {
 	setChainContainerImage(pod, v.Image)
 
@@ -61,7 +60,6 @@ func setChainContainerImages(pod *corev1.Pod, v *cosmosv1.ChainVersion) {
 	}
 }
 
-//nolint:unused // Reserved for future version upgrade feature
 func setChainContainerImage(pod *corev1.Pod, image string) {
 	for i := range pod.Spec.Containers {
 		if pod.Spec.Containers[i].Name == mainContainer {

@@ -208,11 +208,59 @@ func podReadinessProbes(crd *cosmosv1.CosmosFullNode) []*corev1.Probe {
 	return []*corev1.Probe{mainProbe, sidecarProbe}
 }
 
+// findVersion returns the appropriate ChainVersion based on the current height.
+// It finds the version with the highest UpgradeHeight that is <= currentHeight.
+func findVersion(versions []cosmosv1.ChainVersion, currentHeight uint64) *cosmosv1.ChainVersion {
+	var selected *cosmosv1.ChainVersion
+	for i := range versions {
+		v := &versions[i]
+		if v.UpgradeHeight <= currentHeight {
+			if selected == nil || v.UpgradeHeight > selected.UpgradeHeight {
+				selected = v
+			}
+		}
+	}
+	return selected
+}
+
 // Build assigns the CosmosFullNode crd as the owner and returns a fully constructed pod.
 func (b PodBuilder) Build() (*corev1.Pod, error) {
 	pod := b.pod.DeepCopy()
+
+	// Check if pod is disabled via InstanceOverrides
+	if pod.Name != "" {
+		if override, ok := b.crd.Spec.InstanceOverrides[pod.Name]; ok {
+			if override.DisableStrategy != nil && (*override.DisableStrategy == cosmosv1.DisablePod || *override.DisableStrategy == cosmosv1.DisableAll) {
+				return nil, nil
+			}
+		}
+	}
+
 	if err := kube.ApplyStrategicMergePatch(pod, podPatch(b.crd)); err != nil {
 		return nil, err
+	}
+
+	// Apply version-specific images based on pod height (after merge patch)
+	if pod.Name != "" && len(b.crd.Spec.ChainSpec.Versions) > 0 {
+		if currentHeight, ok := b.crd.Status.Height[pod.Name]; ok {
+			if version := findVersion(b.crd.Spec.ChainSpec.Versions, currentHeight); version != nil {
+				setChainContainerImages(pod, version)
+			}
+		}
+	}
+
+	// Apply image override if specified (must be after version logic)
+	if pod.Name != "" {
+		if override, ok := b.crd.Spec.InstanceOverrides[pod.Name]; ok {
+			if override.Image != "" {
+				for i := range pod.Spec.Containers {
+					if pod.Spec.Containers[i].Name == mainContainer {
+						pod.Spec.Containers[i].Image = override.Image
+						break
+					}
+				}
+			}
+		}
 	}
 	kube.NormalizeMetadata(&pod.ObjectMeta)
 	return pod, nil
@@ -343,7 +391,7 @@ func ChainHomeDir(crd *cosmosv1.CosmosFullNode) string {
 func envVars(crd *cosmosv1.CosmosFullNode) []corev1.EnvVar {
 	home := ChainHomeDir(crd)
 	envs := []corev1.EnvVar{
-		{Name: "HOME", Value: systemTmpDir},
+		{Name: "HOME", Value: workDir},
 		{Name: "WORK_DIR", Value: workDir},
 		{Name: "CHAIN_HOME", Value: home},
 		{Name: "GENESIS_FILE", Value: path.Join(home, getCometbftDir(crd)+"/config", "genesis.json")},
