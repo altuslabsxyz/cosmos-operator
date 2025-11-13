@@ -125,7 +125,7 @@ func (b *RecoveryPodBuilder) BuildPod(
 
 	// Image pull secrets
 	var imagePullSecrets []corev1.LocalObjectReference
-	if podTemplate != nil && len(podTemplate.ImagePullSecrets) > 0 {
+	if len(podTemplate.ImagePullSecrets) > 0 {
 		imagePullSecrets = podTemplate.ImagePullSecrets
 	}
 
