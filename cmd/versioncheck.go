@@ -166,12 +166,26 @@ func checkVersion(
 		return err
 	}
 
+	// Find the expected image based on current height
+	// Uses the same logic as pod_builder.go findVersion() to ensure consistency
 	image := crd.Spec.PodTemplate.Image
+	currentHeight := uint64(height)
+
+	// First, find the highest version <= currentHeight
 	for _, v := range crd.Spec.ChainSpec.Versions {
-		if uint64(height) < v.UpgradeHeight {
+		if v.UpgradeHeight <= currentHeight {
+			image = v.Image
+		}
+	}
+
+	// Special case: if the next version has SetHaltHeight=true and is at currentHeight+1,
+	// use that version instead. This handles the case where the chain halts at halt-height,
+	// but the database only records up to halt-height-1.
+	for _, v := range crd.Spec.ChainSpec.Versions {
+		if v.UpgradeHeight == currentHeight+1 && v.SetHaltHeight {
+			image = v.Image
 			break
 		}
-		image = v.Image
 	}
 
 	var thisPodImage string
