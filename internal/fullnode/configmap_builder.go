@@ -49,7 +49,10 @@ func BuildConfigMaps(crd *cosmosv1.CosmosFullNode, peers Peers) ([]diff.Resource
 			for _, v := range crd.Spec.ChainSpec.Versions {
 				if instanceHeight < v.UpgradeHeight {
 					// Set halt height only if SetHaltHeight is true for the next upgrade
-					if v.SetHaltHeight {
+					// AND we haven't reached halt-height - 1 yet.
+					// When at halt-height - 1, we need to remove halt-height to allow the chain
+					// to proceed with the new image after halting.
+					if v.SetHaltHeight && instanceHeight+1 < v.UpgradeHeight {
 						haltHeight = v.UpgradeHeight
 					}
 					break

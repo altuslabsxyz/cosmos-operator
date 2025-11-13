@@ -453,6 +453,24 @@ func TestBuildConfigMaps(t *testing.T) {
 			require.Equal(t, int64(1000), got["halt-height"])
 		})
 
+		t.Run("at halt-height minus 1 - should remove halt-height", func(t *testing.T) {
+			custom := crd.DeepCopy()
+			custom.Spec.ChainSpec.Versions = []cosmosv1.ChainVersion{
+				{UpgradeHeight: 1000, Image: "v1.0.0", SetHaltHeight: true},
+			}
+			custom.Status.Height = map[string]uint64{"osmosis-0": 999}
+
+			cms, err := BuildConfigMaps(custom, nil)
+			require.NoError(t, err)
+
+			var got map[string]any
+			_, err = toml.Decode(cms[0].Object().Data["app-overlay.toml"], &got)
+			require.NoError(t, err)
+
+			// Should set halt-height to 0 to allow chain to proceed with new image
+			require.Equal(t, int64(0), got["halt-height"])
+		})
+
 		t.Run("single version with SetHaltHeight false", func(t *testing.T) {
 			custom := crd.DeepCopy()
 			custom.Spec.ChainSpec.Versions = []cosmosv1.ChainVersion{
