@@ -43,6 +43,9 @@ func TestCollectDiskUsage(t *testing.T) {
 			panic(err)
 		}
 		pod.Status.PodIP = fmt.Sprintf("10.0.0.%d", index)
+		pod.Status.Conditions = []corev1.PodCondition{
+			{Type: corev1.PodReady, Status: corev1.ConditionTrue},
+		}
 		return *pod
 	})
 
@@ -201,8 +204,8 @@ func TestCollectDiskUsage(t *testing.T) {
 	t.Run("disk client error", func(t *testing.T) {
 		var reader mockReader
 		reader.ObjectList = corev1.PodList{Items: []corev1.Pod{
-			{ObjectMeta: metav1.ObjectMeta{Name: "1"}, Status: corev1.PodStatus{PodIP: "10.0.0.1"}},
-			{ObjectMeta: metav1.ObjectMeta{Name: "2"}, Status: corev1.PodStatus{PodIP: "10.0.0.2"}},
+			{ObjectMeta: metav1.ObjectMeta{Name: "1"}, Status: corev1.PodStatus{PodIP: "10.0.0.1", Conditions: []corev1.PodCondition{{Type: corev1.PodReady, Status: corev1.ConditionTrue}}}},
+			{ObjectMeta: metav1.ObjectMeta{Name: "2"}, Status: corev1.PodStatus{PodIP: "10.0.0.2", Conditions: []corev1.PodCondition{{Type: corev1.PodReady, Status: corev1.ConditionTrue}}}},
 		}}
 
 		diskClient := mockDiskUsager(func(ctx context.Context, host, homeDir string) (healthcheck.DiskUsageResponse, error) {

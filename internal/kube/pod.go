@@ -26,6 +26,11 @@ func IsPodAvailable(pod *corev1.Pod, minReady time.Duration, now time.Time) bool
 	return false
 }
 
+// IsPodReady returns true if a pod is ready; false otherwise.
+func IsPodReady(pod *corev1.Pod) bool {
+	return isPodReadyConditionTrue(pod.Status)
+}
+
 // isPodReadyConditionTrue returns true if a pod is ready; false otherwise.
 func isPodReadyConditionTrue(status corev1.PodStatus) bool {
 	condition := getPodReadyCondition(status)

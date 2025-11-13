@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"strings"
 	"time"
 
 	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
@@ -64,6 +65,13 @@ func (c DiskUsageCollector) CollectDiskUsage(ctx context.Context, crd *cosmosv1.
 		i := i
 		eg.Go(func() error {
 			pod := pods.Items[i]
+
+			// Skip pods that are not ready
+			if !kube.IsPodReady(&pod) {
+				errs[i] = fmt.Errorf("pod %s: not ready", pod.Name)
+				return nil
+			}
+
 			cctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 			defer cancel()
 			resp, err := c.diskClient.DiskUsage(cctx, "http://"+pod.Status.PodIP, ChainHomeDir(crd))
@@ -91,12 +99,26 @@ func (c DiskUsageCollector) CollectDiskUsage(ctx context.Context, crd *cosmosv1.
 
 	_ = eg.Wait()
 
-	errs = lo.Filter(errs, func(item error, _ int) bool {
-		return item != nil
+	// Filter out nil errors and count actual errors vs not-ready errors
+	realErrs := lo.Filter(errs, func(err error, _ int) bool {
+		if err == nil {
+			return false
+		}
+		// Don't count "not ready" as a real error
+		return !strings.HasSuffix(err.Error(), "not ready")
 	})
-	if len(errs) == len(pods.Items) {
-		return nil, errors.Join(errs...)
+
+	// Only return error if ALL pods have real errors (not just "not ready")
+	if len(realErrs) > 0 && len(realErrs) == len(pods.Items) {
+		return nil, errors.Join(realErrs...)
 	}
 
-	return lo.Compact(found), nil
+	// If we have at least one successful result, return it
+	result := lo.Compact(found)
+	if len(result) > 0 {
+		return result, nil
+	}
+
+	// All pods are not ready, don't return error
+	return nil, nil
 }
