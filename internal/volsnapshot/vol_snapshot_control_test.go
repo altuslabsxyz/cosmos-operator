@@ -8,13 +8,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-logr/logr"
-	snapshotv1 "github.com/kubernetes-csi/external-snapshotter/client/v6/apis/volumesnapshot/v1"
-	"github.com/samber/lo"
 	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
 	cosmosalpha "github.com/b-harvest/cosmos-operator/api/v1alpha1"
 	"github.com/b-harvest/cosmos-operator/internal/fullnode"
 	"github.com/b-harvest/cosmos-operator/internal/kube"
+	"github.com/go-logr/logr"
+	snapshotv1 "github.com/kubernetes-csi/external-snapshotter/client/v6/apis/volumesnapshot/v1"
+	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -285,9 +285,9 @@ func TestVolumeSnapshotControl_CreateSnapshot(t *testing.T) {
 		require.Nil(t, got.Spec.Source.VolumeSnapshotContentName)
 
 		wantLabels := map[string]string{
-			"test":                       "labels",
-			kube.ControllerLabel:         "cosmos-operator",
-			kube.ComponentLabel:          "ScheduledVolumeSnapshot",
+			"test":                      "labels",
+			kube.ControllerLabel:        "cosmos-operator",
+			kube.ComponentLabel:         "ScheduledVolumeSnapshot",
 			"cosmos.bharvest.io/source": "my-snapshot",
 		}
 		require.Equal(t, wantLabels, got.Labels)

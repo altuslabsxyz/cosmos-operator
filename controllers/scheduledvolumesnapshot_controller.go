@@ -21,12 +21,12 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/go-logr/logr"
 	cosmosv1alpha1 "github.com/b-harvest/cosmos-operator/api/v1alpha1"
 	"github.com/b-harvest/cosmos-operator/internal/cosmos"
 	"github.com/b-harvest/cosmos-operator/internal/fullnode"
 	"github.com/b-harvest/cosmos-operator/internal/kube"
 	"github.com/b-harvest/cosmos-operator/internal/volsnapshot"
+	"github.com/go-logr/logr"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"

@@ -4,19 +4,17 @@ import (
 	"context"
 	"fmt"
 
-	snapshotv1 "github.com/kubernetes-csi/external-snapshotter/client/v6/apis/volumesnapshot/v1"
-	"github.com/samber/lo"
 	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
 	"github.com/b-harvest/cosmos-operator/internal/diff"
 	"github.com/b-harvest/cosmos-operator/internal/kube"
+	snapshotv1 "github.com/kubernetes-csi/external-snapshotter/client/v6/apis/volumesnapshot/v1"
+	"github.com/samber/lo"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
-
-const revisionLabel = "app.kubernetes.io/revision"
 
 // PVCControl reconciles volumes for a CosmosFullNode.
 // Unlike StatefulSet, PVCControl will update volumes by deleting and recreating volumes.

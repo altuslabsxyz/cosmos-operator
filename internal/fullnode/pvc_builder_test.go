@@ -5,11 +5,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/samber/lo"
 	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
 	"github.com/b-harvest/cosmos-operator/internal/diff"
 	"github.com/b-harvest/cosmos-operator/internal/kube"
 	"github.com/b-harvest/cosmos-operator/internal/test"
+	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -59,8 +59,8 @@ func TestBuildPVCs(t *testing.T) {
 				"app.kubernetes.io/name":       "juno",
 				"app.kubernetes.io/instance":   fmt.Sprintf("juno-%d", i),
 				"app.kubernetes.io/version":    "v1.2.3",
-				"cosmos.bharvest.io/network":  "mainnet",
-				"cosmos.bharvest.io/type":     "FullNode",
+				"cosmos.bharvest.io/network":   "mainnet",
+				"cosmos.bharvest.io/type":      "FullNode",
 			}
 			require.Equal(t, wantLabels, got.Labels)
 

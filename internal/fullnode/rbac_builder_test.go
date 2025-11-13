@@ -33,8 +33,8 @@ func TestBuildRBAC(t *testing.T) {
 			"app.kubernetes.io/name":       "hub",
 			"app.kubernetes.io/component":  "vc",
 			"app.kubernetes.io/version":    "v6.0.0",
-			"cosmos.bharvest.io/network":  "testnet",
-			"cosmos.bharvest.io/type":     "FullNode",
+			"cosmos.bharvest.io/network":   "testnet",
+			"cosmos.bharvest.io/type":      "FullNode",
 		}
 		require.Equal(t, wantLabels, sa.Labels)
 
@@ -52,8 +52,8 @@ func TestBuildRBAC(t *testing.T) {
 			"app.kubernetes.io/name":       "hub",
 			"app.kubernetes.io/component":  "vc",
 			"app.kubernetes.io/version":    "v6.0.0",
-			"cosmos.bharvest.io/network":  "testnet",
-			"cosmos.bharvest.io/type":     "FullNode",
+			"cosmos.bharvest.io/network":   "testnet",
+			"cosmos.bharvest.io/type":      "FullNode",
 		}
 		require.Equal(t, wantLabels, role.Labels)
 
@@ -89,8 +89,8 @@ func TestBuildRBAC(t *testing.T) {
 			"app.kubernetes.io/name":       "hub",
 			"app.kubernetes.io/component":  "vc",
 			"app.kubernetes.io/version":    "v6.0.0",
-			"cosmos.bharvest.io/network":  "testnet",
-			"cosmos.bharvest.io/type":     "FullNode",
+			"cosmos.bharvest.io/network":   "testnet",
+			"cosmos.bharvest.io/type":      "FullNode",
 		}
 		require.Equal(t, wantLabels, rb.Labels)
 

@@ -7,10 +7,10 @@ import (
 	"math"
 	"time"
 
-	"github.com/samber/lo"
 	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
 	"github.com/b-harvest/cosmos-operator/internal/healthcheck"
 	"github.com/b-harvest/cosmos-operator/internal/kube"
+	"github.com/samber/lo"
 	"golang.org/x/sync/errgroup"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"

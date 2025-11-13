@@ -36,11 +36,11 @@ import (
 // StuckHeightRecoveryReconciler reconciles a StuckHeightRecovery object
 type StuckHeightRecoveryReconciler struct {
 	client.Client
-	Scheme           *runtime.Scheme
-	recorder         record.EventRecorder
-	heightMonitor    *stuckheight.HeightMonitor
-	snapshotCreator  *stuckheight.SnapshotCreator
-	rateLimiter      *stuckheight.RateLimiter
+	Scheme             *runtime.Scheme
+	recorder           record.EventRecorder
+	heightMonitor      *stuckheight.HeightMonitor
+	snapshotCreator    *stuckheight.SnapshotCreator
+	rateLimiter        *stuckheight.RateLimiter
 	recoveryPodBuilder *stuckheight.RecoveryPodBuilder
 }
 
