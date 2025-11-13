@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/samber/lo"
 	"github.com/b-harvest/cosmos-operator/internal/kube"
+	"github.com/samber/lo"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 )

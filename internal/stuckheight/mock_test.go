@@ -172,4 +172,3 @@ func (m *mockClient) Status() client.StatusWriter {
 func (m *mockClient) RESTMapper() meta.RESTMapper {
 	panic("implement me")
 }
-

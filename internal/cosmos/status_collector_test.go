@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/samber/lo"
 	"github.com/b-harvest/cosmos-operator/internal/kube"
+	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 )

@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-logr/logr"
 	"github.com/b-harvest/cosmos-operator/internal/cosmos"
+	"github.com/go-logr/logr"
 	"github.com/stretchr/testify/require"
 )
 

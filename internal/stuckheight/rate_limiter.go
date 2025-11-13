@@ -25,8 +25,8 @@ import (
 )
 
 const (
-	DefaultMaxRetries       = 3
-	DefaultRateLimitWindow  = "5m"
+	DefaultMaxRetries      = 3
+	DefaultRateLimitWindow = "5m"
 )
 
 // RateLimiter manages retry attempts and rate limiting
