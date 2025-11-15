@@ -132,6 +132,13 @@ type FullNodeStatus struct {
 	// +optional
 	SelfHealing SelfHealingStatus `json:"selfHealing,omitempty"`
 
+	// Set by the StuckHeightRecovery controller. Used to signal the CosmosFullNode to exclude pods
+	// from being created during stuck height recovery.
+	// Map key is the StuckHeightRecovery name.
+	// +optional
+	// +mapType:=granular
+	StuckHeightRecoveryStatus map[string]StuckHeightRecoveryPodStatus `json:"stuckHeightRecoveryStatus,omitempty"`
+
 	// Persistent peer addresses.
 	// +optional
 	Peers []string `json:"peers"`
@@ -163,6 +170,12 @@ type FullNodeSnapshotStatus struct {
 	// Which pod name to temporarily delete. Indicates a ScheduledVolumeSnapshot is taking place. For optimal data
 	// integrity, pod is temporarily removed so PVC does not have any processes writing to it.
 	PodCandidate string `json:"podCandidate"`
+}
+
+type StuckHeightRecoveryPodStatus struct {
+	// The pod that is being recovered. Pod is temporarily deleted to prevent Multi-Attach errors
+	// during recovery.
+	PodName string `json:"podName"`
 }
 
 type FullNodePhase string

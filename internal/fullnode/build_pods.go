@@ -81,5 +81,8 @@ func podCandidates(crd *cosmosv1.CosmosFullNode) map[string]struct{} {
 	for _, v := range crd.Status.ScheduledSnapshotStatus {
 		candidates[v.PodCandidate] = struct{}{}
 	}
+	for _, v := range crd.Status.StuckHeightRecoveryStatus {
+		candidates[v.PodName] = struct{}{}
+	}
 	return candidates
 }

@@ -128,7 +128,7 @@ func (r *StuckHeightRecoveryReconciler) Reconcile(ctx context.Context, req ctrl.
 		return r.handleCreatingSnapshot(ctx, recovery, reporter)
 
 	case cosmosv1.StuckHeightRecoveryPhaseWaitingForSnapshot:
-		return r.handleWaitingForSnapshot(ctx, recovery, reporter)
+		return r.handleWaitingForSnapshot(ctx, recovery, crd, reporter)
 
 	case cosmosv1.StuckHeightRecoveryPhaseRunningRecovery:
 		return r.handleRunningRecovery(ctx, recovery, crd, reporter)
@@ -137,10 +137,10 @@ func (r *StuckHeightRecoveryReconciler) Reconcile(ctx context.Context, req ctrl.
 		return r.handleWaitingForRecovery(ctx, recovery, reporter)
 
 	case cosmosv1.StuckHeightRecoveryPhaseRecoveryComplete:
-		return r.handleRecoveryComplete(ctx, recovery, reporter)
+		return r.handleRecoveryComplete(ctx, recovery, crd, reporter)
 
 	case cosmosv1.StuckHeightRecoveryPhaseRecoveryFailed:
-		return r.handleRecoveryFailed(ctx, recovery, reporter)
+		return r.handleRecoveryFailed(ctx, recovery, crd, reporter)
 
 	case cosmosv1.StuckHeightRecoveryPhaseRateLimited:
 		return r.handleRateLimited(ctx, recovery, crd, reporter)
@@ -284,10 +284,23 @@ func (r *StuckHeightRecoveryReconciler) handleCreatingSnapshot(
 func (r *StuckHeightRecoveryReconciler) handleWaitingForSnapshot(
 	ctx context.Context,
 	recovery *cosmosv1.StuckHeightRecovery,
+	crd *cosmosv1.CosmosFullNode,
 	reporter kube.EventReporter,
 ) (ctrl.Result, error) {
 	ready, err := r.snapshotCreator.CheckSnapshotReady(ctx, recovery.Namespace, recovery.Status.VolumeSnapshotName)
 	if err != nil {
+		// If VolumeSnapshot was deleted, recreate it by going back to CreatingSnapshot phase
+		if errors.IsNotFound(err) {
+			reporter.Info(fmt.Sprintf("VolumeSnapshot %s not found, recreating", recovery.Status.VolumeSnapshotName))
+			reporter.RecordInfo("SnapshotNotFound", fmt.Sprintf("VolumeSnapshot %s was deleted, recreating", recovery.Status.VolumeSnapshotName))
+			recovery.Status.VolumeSnapshotName = ""
+			recovery.Status.Phase = cosmosv1.StuckHeightRecoveryPhaseCreatingSnapshot
+			recovery.Status.Message = "VolumeSnapshot was deleted, recreating"
+			if err := r.Status().Update(ctx, recovery); err != nil {
+				return ctrl.Result{}, err
+			}
+			return ctrl.Result{Requeue: true}, nil
+		}
 		reporter.Error(err, "Failed to check VolumeSnapshot status")
 		return ctrl.Result{RequeueAfter: 10 * time.Second}, err
 	}
@@ -299,6 +312,21 @@ func (r *StuckHeightRecoveryReconciler) handleWaitingForSnapshot(
 
 	reporter.Info("VolumeSnapshot is ready")
 	reporter.RecordInfo("SnapshotReady", fmt.Sprintf("VolumeSnapshot %s is ready", recovery.Status.VolumeSnapshotName))
+
+	// Mark the stuck pod in CosmosFullNode status to prevent it from being recreated during recovery
+	if crd.Status.StuckHeightRecoveryStatus == nil {
+		crd.Status.StuckHeightRecoveryStatus = make(map[string]cosmosv1.StuckHeightRecoveryPodStatus)
+	}
+	crd.Status.StuckHeightRecoveryStatus[recovery.Name] = cosmosv1.StuckHeightRecoveryPodStatus{
+		PodName: recovery.Status.StuckPodName,
+	}
+	if err := r.Status().Update(ctx, crd); err != nil {
+		reporter.Error(err, "Failed to update CosmosFullNode status")
+		return ctrl.Result{RequeueAfter: 10 * time.Second}, err
+	}
+
+	reporter.Info(fmt.Sprintf("Marked pod %s for recovery, it will be excluded from reconciliation", recovery.Status.StuckPodName))
+	reporter.RecordInfo("PodMarkedForRecovery", fmt.Sprintf("Pod %s marked for recovery", recovery.Status.StuckPodName))
 
 	recovery.Status.Phase = cosmosv1.StuckHeightRecoveryPhaseRunningRecovery
 	recovery.Status.Message = "Starting recovery script"
@@ -393,8 +421,20 @@ func (r *StuckHeightRecoveryReconciler) handleWaitingForRecovery(
 func (r *StuckHeightRecoveryReconciler) handleRecoveryComplete(
 	ctx context.Context,
 	recovery *cosmosv1.StuckHeightRecovery,
+	crd *cosmosv1.CosmosFullNode,
 	reporter kube.EventReporter,
 ) (ctrl.Result, error) {
+	// Remove the stuck pod from CosmosFullNode status to allow it to be recreated
+	if crd.Status.StuckHeightRecoveryStatus != nil {
+		delete(crd.Status.StuckHeightRecoveryStatus, recovery.Name)
+		if err := r.Status().Update(ctx, crd); err != nil {
+			reporter.Error(err, "Failed to update CosmosFullNode status")
+			return ctrl.Result{RequeueAfter: 10 * time.Second}, err
+		}
+		reporter.Info(fmt.Sprintf("Removed pod %s from recovery status, it can now be recreated", recovery.Status.StuckPodName))
+		reporter.RecordInfo("PodUnmarkedFromRecovery", fmt.Sprintf("Pod %s unmarked from recovery", recovery.Status.StuckPodName))
+	}
+
 	// Go back to monitoring
 	reporter.Info("Returning to monitoring mode")
 	recovery.Status.Phase = cosmosv1.StuckHeightRecoveryPhaseMonitoring
@@ -413,8 +453,20 @@ func (r *StuckHeightRecoveryReconciler) handleRecoveryComplete(
 func (r *StuckHeightRecoveryReconciler) handleRecoveryFailed(
 	ctx context.Context,
 	recovery *cosmosv1.StuckHeightRecovery,
+	crd *cosmosv1.CosmosFullNode,
 	reporter kube.EventReporter,
 ) (ctrl.Result, error) {
+	// Remove the stuck pod from CosmosFullNode status to allow it to be recreated
+	if crd.Status.StuckHeightRecoveryStatus != nil {
+		delete(crd.Status.StuckHeightRecoveryStatus, recovery.Name)
+		if err := r.Status().Update(ctx, crd); err != nil {
+			reporter.Error(err, "Failed to update CosmosFullNode status")
+			return ctrl.Result{RequeueAfter: 10 * time.Second}, err
+		}
+		reporter.Info(fmt.Sprintf("Removed pod %s from recovery status after failure", recovery.Status.StuckPodName))
+		reporter.RecordInfo("PodUnmarkedAfterFailure", fmt.Sprintf("Pod %s unmarked after recovery failure", recovery.Status.StuckPodName))
+	}
+
 	// Wait before retrying
 	reporter.Info("Recovery failed, will retry monitoring")
 	recovery.Status.Phase = cosmosv1.StuckHeightRecoveryPhaseMonitoring

@@ -5997,6 +5997,23 @@ spec:
               status:
                 description: A generic message for the user. May contain errors.
                 type: string
+              stuckHeightRecoveryStatus:
+                additionalProperties:
+                  properties:
+                    podName:
+                      description: |-
+                        The pod that is being recovered. Pod is temporarily deleted to prevent Multi-Attach errors
+                        during recovery.
+                      type: string
+                  required:
+                  - podName
+                  type: object
+                description: |-
+                  Set by the StuckHeightRecovery controller. Used to signal the CosmosFullNode to exclude pods
+                  from being created during stuck height recovery.
+                  Map key is the StuckHeightRecovery name.
+                type: object
+                x-kubernetes-map-type: granular
               sync:
                 additionalProperties:
                   properties:
