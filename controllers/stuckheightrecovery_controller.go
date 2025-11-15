@@ -88,6 +88,21 @@ func (r *StuckHeightRecoveryReconciler) Reconcile(ctx context.Context, req ctrl.
 	// Create event reporter
 	reporter := kube.NewEventReporter(logger, r.recorder, recovery)
 
+	// Handle deletion
+	if !recovery.DeletionTimestamp.IsZero() {
+		return r.handleDeletion(ctx, recovery, reporter)
+	}
+
+	// Add finalizer if not present
+	const finalizerName = "stuckheightrecovery.cosmos.bharvest.io/finalizer"
+	if !containsString(recovery.Finalizers, finalizerName) {
+		recovery.Finalizers = append(recovery.Finalizers, finalizerName)
+		if err := r.Update(ctx, recovery); err != nil {
+			return ctrl.Result{}, err
+		}
+		return ctrl.Result{Requeue: true}, nil
+	}
+
 	// Check if suspended
 	if recovery.Spec.Suspend {
 		if recovery.Status.Phase != cosmosv1.StuckHeightRecoveryPhaseSuspended {
@@ -575,6 +590,64 @@ func (r *StuckHeightRecoveryReconciler) handleRateLimited(
 	}
 
 	return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
+}
+
+func (r *StuckHeightRecoveryReconciler) handleDeletion(
+	ctx context.Context,
+	recovery *cosmosv1.StuckHeightRecovery,
+	reporter kube.EventReporter,
+) (ctrl.Result, error) {
+	const finalizerName = "stuckheightrecovery.cosmos.bharvest.io/finalizer"
+
+	// Clean up CosmosFullNode status
+	crd := &cosmosv1.CosmosFullNode{}
+	if err := r.Get(ctx, client.ObjectKey{
+		Name:      recovery.Spec.FullNodeRef.Name,
+		Namespace: recovery.Namespace,
+	}, crd); err == nil {
+		// Remove from StuckHeightRecoveryStatus
+		if crd.Status.StuckHeightRecoveryStatus != nil {
+			delete(crd.Status.StuckHeightRecoveryStatus, recovery.Name)
+			if err := r.Status().Update(ctx, crd); err != nil {
+				reporter.Error(err, "Failed to clean up CosmosFullNode status")
+				return ctrl.Result{RequeueAfter: 10 * time.Second}, err
+			}
+			reporter.Info(fmt.Sprintf("Cleaned up CosmosFullNode status for %s", recovery.Name))
+		}
+	} else if !errors.IsNotFound(err) {
+		reporter.Error(err, "Failed to get CosmosFullNode during cleanup")
+		return ctrl.Result{RequeueAfter: 10 * time.Second}, err
+	}
+
+	// Remove finalizer
+	if containsString(recovery.Finalizers, finalizerName) {
+		recovery.Finalizers = removeString(recovery.Finalizers, finalizerName)
+		if err := r.Update(ctx, recovery); err != nil {
+			return ctrl.Result{}, err
+		}
+		reporter.Info("Finalizer removed, resource will be deleted")
+	}
+
+	return ctrl.Result{}, nil
+}
+
+func containsString(slice []string, s string) bool {
+	for _, item := range slice {
+		if item == s {
+			return true
+		}
+	}
+	return false
+}
+
+func removeString(slice []string, s string) []string {
+	result := []string{}
+	for _, item := range slice {
+		if item != s {
+			result = append(result, item)
+		}
+	}
+	return result
 }
 
 // SetupWithManager sets up the controller with the Manager.
