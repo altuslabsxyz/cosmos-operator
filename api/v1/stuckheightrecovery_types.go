@@ -142,6 +142,10 @@ type StuckHeightRecoveryStatus struct {
 	// +optional
 	StuckPodName string `json:"stuckPodName,omitempty"`
 
+	// Name of the PVC for the stuck pod
+	// +optional
+	StuckPodPVCName string `json:"stuckPodPVCName,omitempty"`
+
 	// Name of the created VolumeSnapshot (if any)
 	// +optional
 	VolumeSnapshotName string `json:"volumeSnapshotName,omitempty"`

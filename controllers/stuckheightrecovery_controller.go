@@ -225,6 +225,18 @@ func (r *StuckHeightRecoveryReconciler) handleHeightStuck(
 	// Record attempt
 	r.rateLimiter.RecordAttempt(recovery)
 
+	// Get PVC name before pod is deleted
+	pvcName, err := r.snapshotCreator.GetPVCForPod(ctx, recovery.Namespace, recovery.Status.StuckPodName)
+	if err != nil {
+		reporter.Error(err, "Failed to get PVC name")
+		recovery.Status.Phase = cosmosv1.StuckHeightRecoveryPhaseRecoveryFailed
+		recovery.Status.Message = fmt.Sprintf("Failed to get PVC name: %v", err)
+		_ = r.Status().Update(ctx, recovery)
+		return ctrl.Result{RequeueAfter: 60 * time.Second}, err
+	}
+	recovery.Status.StuckPodPVCName = pvcName
+	reporter.Info(fmt.Sprintf("Found PVC %s for pod %s", pvcName, recovery.Status.StuckPodName))
+
 	// Check if we need to create a snapshot
 	if recovery.Spec.CreateVolumeSnapshot {
 		reporter.Info("Creating VolumeSnapshot before recovery")
@@ -285,14 +297,14 @@ func (r *StuckHeightRecoveryReconciler) handleCreatingSnapshot(
 
 	reporter.Info(fmt.Sprintf("Pod %s deleted, proceeding with snapshot", recovery.Status.StuckPodName))
 
-	// Get PVC for the stuck pod
-	pvcName, err := r.snapshotCreator.GetPVCForPod(ctx, recovery.Namespace, recovery.Status.StuckPodName)
-	if err != nil {
-		reporter.Error(err, "Failed to get PVC")
+	// Use the PVC name saved in status
+	pvcName := recovery.Status.StuckPodPVCName
+	if pvcName == "" {
+		reporter.Error(nil, "PVC name not found in status")
 		recovery.Status.Phase = cosmosv1.StuckHeightRecoveryPhaseRecoveryFailed
-		recovery.Status.Message = fmt.Sprintf("Failed to get PVC: %v", err)
+		recovery.Status.Message = "PVC name not found in status"
 		_ = r.Status().Update(ctx, recovery)
-		return ctrl.Result{RequeueAfter: 60 * time.Second}, err
+		return ctrl.Result{RequeueAfter: 60 * time.Second}, fmt.Errorf("PVC name not found in status")
 	}
 
 	// Create snapshot
@@ -385,14 +397,14 @@ func (r *StuckHeightRecoveryReconciler) handleRunningRecovery(
 
 	reporter.Info(fmt.Sprintf("Pod %s confirmed deleted, creating recovery pod", recovery.Status.StuckPodName))
 
-	// Get PVC for the stuck pod
-	pvcName, err := r.snapshotCreator.GetPVCForPod(ctx, recovery.Namespace, recovery.Status.StuckPodName)
-	if err != nil {
-		reporter.Error(err, "Failed to get PVC")
+	// Use the PVC name saved in status
+	pvcName := recovery.Status.StuckPodPVCName
+	if pvcName == "" {
+		reporter.Error(nil, "PVC name not found in status")
 		recovery.Status.Phase = cosmosv1.StuckHeightRecoveryPhaseRecoveryFailed
-		recovery.Status.Message = fmt.Sprintf("Failed to get PVC: %v", err)
+		recovery.Status.Message = "PVC name not found in status"
 		_ = r.Status().Update(ctx, recovery)
-		return ctrl.Result{RequeueAfter: 60 * time.Second}, err
+		return ctrl.Result{RequeueAfter: 60 * time.Second}, fmt.Errorf("PVC name not found in status")
 	}
 
 	// Create recovery pod

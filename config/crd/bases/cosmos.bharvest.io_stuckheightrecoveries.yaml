@@ -1918,6 +1918,9 @@ spec:
               stuckPodName:
                 description: Name of the stuck pod being recovered
                 type: string
+              stuckPodPVCName:
+                description: Name of the PVC for the stuck pod
+                type: string
               volumeSnapshotName:
                 description: Name of the created VolumeSnapshot (if any)
                 type: string
