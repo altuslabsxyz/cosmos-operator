@@ -328,6 +328,12 @@ func (r *StuckHeightRecoveryReconciler) handleWaitingForSnapshot(
 	reporter.Info(fmt.Sprintf("Marked pod %s for recovery, it will be excluded from reconciliation", recovery.Status.StuckPodName))
 	reporter.RecordInfo("PodMarkedForRecovery", fmt.Sprintf("Pod %s marked for recovery", recovery.Status.StuckPodName))
 
+	// Refetch recovery to get the latest version before updating
+	if err := r.Get(ctx, client.ObjectKeyFromObject(recovery), recovery); err != nil {
+		reporter.Error(err, "Failed to refetch StuckHeightRecovery")
+		return ctrl.Result{RequeueAfter: 10 * time.Second}, err
+	}
+
 	recovery.Status.Phase = cosmosv1.StuckHeightRecoveryPhaseRunningRecovery
 	recovery.Status.Message = "Starting recovery script"
 
@@ -435,6 +441,12 @@ func (r *StuckHeightRecoveryReconciler) handleRecoveryComplete(
 		reporter.RecordInfo("PodUnmarkedFromRecovery", fmt.Sprintf("Pod %s unmarked from recovery", recovery.Status.StuckPodName))
 	}
 
+	// Refetch recovery to get the latest version before updating
+	if err := r.Get(ctx, client.ObjectKeyFromObject(recovery), recovery); err != nil {
+		reporter.Error(err, "Failed to refetch StuckHeightRecovery")
+		return ctrl.Result{RequeueAfter: 10 * time.Second}, err
+	}
+
 	// Go back to monitoring
 	reporter.Info("Returning to monitoring mode")
 	recovery.Status.Phase = cosmosv1.StuckHeightRecoveryPhaseMonitoring
@@ -465,6 +477,12 @@ func (r *StuckHeightRecoveryReconciler) handleRecoveryFailed(
 		}
 		reporter.Info(fmt.Sprintf("Removed pod %s from recovery status after failure", recovery.Status.StuckPodName))
 		reporter.RecordInfo("PodUnmarkedAfterFailure", fmt.Sprintf("Pod %s unmarked after recovery failure", recovery.Status.StuckPodName))
+	}
+
+	// Refetch recovery to get the latest version before updating
+	if err := r.Get(ctx, client.ObjectKeyFromObject(recovery), recovery); err != nil {
+		reporter.Error(err, "Failed to refetch StuckHeightRecovery")
+		return ctrl.Result{RequeueAfter: 10 * time.Second}, err
 	}
 
 	// Wait before retrying
