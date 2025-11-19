@@ -301,11 +301,32 @@ func (r *StuckHeightRecoveryReconciler) handleRecovering(
 	crd *cosmosv1.CosmosFullNode,
 	reporter kube.EventReporter,
 ) (ctrl.Result, error) {
-	// First, check for any pods that have recovered on their own
+	// Check for pod status changes (recovered, stuck, etc.)
 	result, err := r.heightMonitor.CheckStuckHeight(ctx, crd, recovery)
 	if err == nil {
-		// Handle auto-recovered pods
 		now := metav1.Now()
+
+		// Handle newly stuck pods (Lagging → Stuck transition)
+		for podName, stuckHeight := range result.NewlyStuckPods {
+			stuckPod := recovery.Status.StuckPods[podName]
+			reporter.Info(fmt.Sprintf("Pod %s confirmed stuck at height %d (max: %d)", podName, stuckHeight, result.MaxHeight))
+			reporter.RecordInfo("PodStuckConfirmed", fmt.Sprintf("Pod %s stuck at height %d", podName, stuckHeight))
+
+			// Transition from Lagging to Stuck
+			stuckPod.Phase = cosmosv1.PodRecoveryPhaseStuck
+			stuckPod.Message = fmt.Sprintf("Stuck at height %d for %s", stuckHeight, recovery.Spec.StuckDuration)
+			stuckPod.LastUpdateTime = &now
+
+			recovery.Status.RecoveryHistory = append(recovery.Status.RecoveryHistory, cosmosv1.RecoveryHistoryEntry{
+				Timestamp: now,
+				PodName:   podName,
+				Height:    stuckHeight,
+				EventType: "stuck_confirmed",
+				Message:   fmt.Sprintf("Pod confirmed stuck at height %d after %s", stuckHeight, recovery.Spec.StuckDuration),
+			})
+		}
+
+		// Handle auto-recovered pods
 		for podName, currentHeight := range result.RecoveredPods {
 			if stuckPod, exists := recovery.Status.StuckPods[podName]; exists {
 				reporter.Info(fmt.Sprintf("Pod %s recovered on its own during recovery (height %d -> %d)",
@@ -323,6 +344,14 @@ func (r *StuckHeightRecoveryReconciler) handleRecovering(
 					EventType: "height_recovered",
 					Message:   "Pod recovered during recovery process",
 				})
+			}
+		}
+
+		// Update lagging pods
+		for podName, laggingHeight := range result.LaggingPods {
+			if stuckPod, exists := recovery.Status.StuckPods[podName]; exists {
+				stuckPod.CurrentHeight = &laggingHeight
+				stuckPod.LastUpdateTime = &now
 			}
 		}
 	}
