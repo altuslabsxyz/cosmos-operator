@@ -47,8 +47,8 @@ func (s *SnapshotCreator) CreateSnapshot(
 	recovery *cosmosv1.StuckHeightRecovery,
 	pvcName string,
 ) (string, error) {
-	// Use human-readable timestamp format: 2025-01-15T10-30-45
-	timestamp := time.Now().Format("2006-01-02T15-04-05")
+	// Use human-readable timestamp format: 2025-01-15t10-30-45 (lowercase for RFC 1123)
+	timestamp := time.Now().Format("2006-01-02t15-04-05")
 	snapshotName := fmt.Sprintf("%s-recovery-%s", pvcName, timestamp)
 
 	snapshot := &snapshotv1.VolumeSnapshot{
