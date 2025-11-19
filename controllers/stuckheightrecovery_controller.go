@@ -194,6 +194,35 @@ func (r *StuckHeightRecoveryReconciler) handleMonitoring(
 		r.rateLimiter.ResetWindow(recovery)
 	}
 
+	// Handle lagging pods - track them to detect if they become stuck
+	for podName, laggingHeight := range result.LaggingPods {
+		// Check if we're already tracking this pod
+		if existingPod, exists := recovery.Status.StuckPods[podName]; exists {
+			// Update current height
+			existingPod.CurrentHeight = &laggingHeight
+			existingPod.LastUpdateTime = &now
+
+			// Check if height has changed - if so, remove from tracking
+			if existingPod.StuckAtHeight != laggingHeight {
+				reporter.Info(fmt.Sprintf("Pod %s height changed (%d -> %d), removing from tracking",
+					podName, existingPod.StuckAtHeight, laggingHeight))
+				delete(recovery.Status.StuckPods, podName)
+			}
+		} else {
+			// Start tracking this lagging pod
+			reporter.Info(fmt.Sprintf("Tracking lagging pod %s at height %d (max: %d)", podName, laggingHeight, result.MaxHeight))
+			recovery.Status.StuckPods[podName] = &cosmosv1.StuckPodRecoveryStatus{
+				PodName:        podName,
+				StuckAtHeight:  laggingHeight,
+				CurrentHeight:  &laggingHeight,
+				DetectedAt:     now,
+				Phase:          cosmosv1.PodRecoveryPhaseLagging,
+				Message:        fmt.Sprintf("Lagging %d blocks behind max height %d", result.MaxHeight-laggingHeight, result.MaxHeight),
+				LastUpdateTime: &now,
+			}
+		}
+	}
+
 	// Handle pods that have recovered on their own
 	for podName, currentHeight := range result.RecoveredPods {
 		stuckPod := recovery.Status.StuckPods[podName]
@@ -301,8 +330,9 @@ func (r *StuckHeightRecoveryReconciler) handleRecovering(
 	// Process each stuck pod based on its phase
 	podsNeedingWork := false
 	for _, stuckPod := range recovery.Status.StuckPods {
-		// Skip pods that have already recovered or failed
-		if stuckPod.Phase == cosmosv1.PodRecoveryPhaseRecovered ||
+		// Skip pods that are just being tracked or have already recovered/failed
+		if stuckPod.Phase == cosmosv1.PodRecoveryPhaseLagging ||
+			stuckPod.Phase == cosmosv1.PodRecoveryPhaseRecovered ||
 			stuckPod.Phase == cosmosv1.PodRecoveryPhaseHeightRecovered ||
 			stuckPod.Phase == cosmosv1.PodRecoveryPhaseFailed {
 			continue
@@ -643,6 +673,7 @@ func (r *StuckHeightRecoveryReconciler) cleanupCompletedPods(
 	}
 
 	// Remove completed pods from StuckPods map and CosmosFullNode status
+	// Keep Lagging pods in the map for tracking
 	for podName, stuckPod := range recovery.Status.StuckPods {
 		if stuckPod.Phase == cosmosv1.PodRecoveryPhaseRecovered ||
 			stuckPod.Phase == cosmosv1.PodRecoveryPhaseHeightRecovered ||
@@ -676,6 +707,7 @@ func (r *StuckHeightRecoveryReconciler) updateOverallStatus(
 	}
 
 	// Count pods in different states
+	lagging := 0
 	recovering := 0
 	recovered := 0
 	failed := 0
@@ -683,6 +715,8 @@ func (r *StuckHeightRecoveryReconciler) updateOverallStatus(
 
 	for _, stuckPod := range recovery.Status.StuckPods {
 		switch stuckPod.Phase {
+		case cosmosv1.PodRecoveryPhaseLagging:
+			lagging++
 		case cosmosv1.PodRecoveryPhaseRecovered:
 			recovered++
 		case cosmosv1.PodRecoveryPhaseHeightRecovered:
@@ -695,10 +729,17 @@ func (r *StuckHeightRecoveryReconciler) updateOverallStatus(
 	}
 
 	// Update message
-	recovery.Status.Message = fmt.Sprintf(
-		"Recovery status: %d recovering, %d recovered, %d auto-recovered, %d failed (total: %d)",
-		recovering, recovered, heightRecovered, failed, totalPods,
-	)
+	if lagging > 0 {
+		recovery.Status.Message = fmt.Sprintf(
+			"Status: %d lagging, %d recovering, %d recovered, %d auto-recovered, %d failed (total: %d)",
+			lagging, recovering, recovered, heightRecovered, failed, totalPods,
+		)
+	} else {
+		recovery.Status.Message = fmt.Sprintf(
+			"Recovery status: %d recovering, %d recovered, %d auto-recovered, %d failed (total: %d)",
+			recovering, recovered, heightRecovered, failed, totalPods,
+		)
+	}
 
 	return nil
 }

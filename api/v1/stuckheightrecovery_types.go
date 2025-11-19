@@ -212,10 +212,13 @@ type StuckPodRecoveryStatus struct {
 }
 
 // PodRecoveryPhase represents the recovery phase for a single pod
-// +kubebuilder:validation:Enum=Stuck;Recovering;CreatingSnapshot;WaitingForSnapshot;RunningRecovery;WaitingForRecovery;Recovered;Failed;HeightRecovered
+// +kubebuilder:validation:Enum=Lagging;Stuck;Recovering;CreatingSnapshot;WaitingForSnapshot;RunningRecovery;WaitingForRecovery;Recovered;Failed;HeightRecovered
 type PodRecoveryPhase string
 
 const (
+	// Pod is lagging (>100 blocks behind) but not yet confirmed stuck
+	PodRecoveryPhaseLagging PodRecoveryPhase = "Lagging"
+
 	// Pod is stuck and waiting for recovery to start
 	PodRecoveryPhaseStuck PodRecoveryPhase = "Stuck"
 

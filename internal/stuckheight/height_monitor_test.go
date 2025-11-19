@@ -167,6 +167,7 @@ func TestHeightMonitor_CheckStuckHeight(t *testing.T) {
 		}
 
 		pastTime := metav1.NewTime(time.Now().Add(-10 * time.Minute))
+		currentHeight := uint64(100)
 		recovery := &cosmosv1.StuckHeightRecovery{
 			Spec: cosmosv1.StuckHeightRecoverySpec{
 				StuckDuration: "5m",
@@ -174,6 +175,16 @@ func TestHeightMonitor_CheckStuckHeight(t *testing.T) {
 			Status: cosmosv1.StuckHeightRecoveryStatus{
 				LastObservedHeight:   100,
 				LastHeightUpdateTime: &pastTime,
+				StuckPods: map[string]*cosmosv1.StuckPodRecoveryStatus{
+					"test-pod-0": {
+						PodName:        "test-pod-0",
+						StuckAtHeight:  100,
+						CurrentHeight:  &currentHeight,
+						DetectedAt:     pastTime,
+						Phase:          cosmosv1.PodRecoveryPhaseLagging,
+						LastUpdateTime: &pastTime,
+					},
+				},
 			},
 		}
 
@@ -226,6 +237,7 @@ func TestHeightMonitor_CheckStuckHeight(t *testing.T) {
 		}
 
 		pastTime := metav1.NewTime(time.Now().Add(-10 * time.Minute))
+		currentHeight := uint64(100)
 		recovery := &cosmosv1.StuckHeightRecovery{
 			Spec: cosmosv1.StuckHeightRecoverySpec{
 				StuckDuration: "5m",
@@ -233,6 +245,24 @@ func TestHeightMonitor_CheckStuckHeight(t *testing.T) {
 			Status: cosmosv1.StuckHeightRecoveryStatus{
 				LastObservedHeight:   100,
 				LastHeightUpdateTime: &pastTime,
+				StuckPods: map[string]*cosmosv1.StuckPodRecoveryStatus{
+					"test-pod-0": {
+						PodName:        "test-pod-0",
+						StuckAtHeight:  100,
+						CurrentHeight:  &currentHeight,
+						DetectedAt:     pastTime,
+						Phase:          cosmosv1.PodRecoveryPhaseLagging,
+						LastUpdateTime: &pastTime,
+					},
+					"test-pod-1": {
+						PodName:        "test-pod-1",
+						StuckAtHeight:  100,
+						CurrentHeight:  &currentHeight,
+						DetectedAt:     pastTime,
+						Phase:          cosmosv1.PodRecoveryPhaseLagging,
+						LastUpdateTime: &pastTime,
+					},
+				},
 			},
 		}
 
@@ -244,6 +274,39 @@ func TestHeightMonitor_CheckStuckHeight(t *testing.T) {
 		require.Contains(t, result.NewlyStuckPods, "test-pod-0")
 		require.Contains(t, result.NewlyStuckPods, "test-pod-1")
 		require.NotContains(t, result.NewlyStuckPods, "test-pod-2")
+	})
+
+	t.Run("lagging pod - not yet stuck", func(t *testing.T) {
+		mock := &mockClient{}
+		monitor := NewHeightMonitor(mock)
+
+		crd := &cosmosv1.CosmosFullNode{
+			Status: cosmosv1.FullNodeStatus{
+				Height: map[string]uint64{
+					"test-pod-0": 100,
+					"test-pod-1": 1000, // This pod is at normal height
+				},
+			},
+		}
+
+		recovery := &cosmosv1.StuckHeightRecovery{
+			Spec: cosmosv1.StuckHeightRecoverySpec{
+				StuckDuration: "5m",
+			},
+			Status: cosmosv1.StuckHeightRecoveryStatus{
+				LastObservedHeight: 1000,
+				StuckPods:          map[string]*cosmosv1.StuckPodRecoveryStatus{},
+			},
+		}
+
+		result, err := monitor.CheckStuckHeight(ctx, crd, recovery)
+
+		require.NoError(t, err)
+		require.Equal(t, uint64(1000), result.MaxHeight)
+		require.Empty(t, result.NewlyStuckPods)
+		require.Len(t, result.LaggingPods, 1)
+		require.Contains(t, result.LaggingPods, "test-pod-0")
+		require.Equal(t, uint64(100), result.LaggingPods["test-pod-0"])
 	})
 
 	t.Run("pod recovered - height started moving again", func(t *testing.T) {
