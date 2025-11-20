@@ -359,6 +359,15 @@ func (r *StuckHeightRecoveryReconciler) handleRecovering(
 				// Update existing lagging pod
 				stuckPod.CurrentHeight = &laggingHeight
 				stuckPod.LastUpdateTime = &now
+
+				// If height increased, reset detection time (pod is syncing, not stuck)
+				if stuckPod.StuckAtHeight != laggingHeight {
+					reporter.Info(fmt.Sprintf("Pod %s height increased (%d -> %d), resetting stuck detection timer",
+						podName, stuckPod.StuckAtHeight, laggingHeight))
+					stuckPod.StuckAtHeight = laggingHeight
+					stuckPod.DetectedAt = now
+					stuckPod.Message = fmt.Sprintf("Syncing: height increased to %d (max: %d)", laggingHeight, result.MaxHeight)
+				}
 			} else {
 				// Start tracking new lagging pod
 				reporter.Info(fmt.Sprintf("Tracking new lagging pod %s at height %d (max: %d)", podName, laggingHeight, result.MaxHeight))
