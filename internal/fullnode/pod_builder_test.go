@@ -718,7 +718,12 @@ HOME="$CHAIN_HOME" gaiad start --home /home/operator/cosmos`
 		require.Equal(t, "new-init:latest", pod2.Spec.InitContainers[2].Image)
 	})
 
-	t.Run("version selection with halt-height", func(t *testing.T) {
+	// Version selection tests verify the Cosmos SDK upgrade semantics:
+	// When an upgrade is scheduled at height N, the upgrade handler runs in BeginBlock/PreBlocker of block N.
+	// The database records height N-1 as the last committed block before the upgrade.
+	// Therefore, when DB shows height N-1, we need to switch to the new image.
+	// Condition: UpgradeHeight <= currentHeight + 1
+	t.Run("version selection", func(t *testing.T) {
 		crd := defaultCRD()
 		crd.Spec.ChainSpec.Versions = []cosmosv1.ChainVersion{
 			{UpgradeHeight: 1000, Image: "v1.0.0"},
@@ -726,59 +731,71 @@ HOME="$CHAIN_HOME" gaiad start --home /home/operator/cosmos`
 			{UpgradeHeight: 3000, Image: "v3.0.0"},
 		}
 
-		t.Run("before halt-height", func(t *testing.T) {
+		t.Run("well before upgrade", func(t *testing.T) {
 			custom := crd.DeepCopy()
 			custom.Status.Height = map[string]uint64{"osmosis-0": 1500}
 
 			pod, err := NewPodBuilder(custom).WithOrdinal(0).Build()
 			require.NoError(t, err)
 
-			// Should use v1.0.0 (height 1000)
+			// height=1500: 1000 <= 1501 ✓, 2000 <= 1501 ✗ → v1.0.0
 			require.Equal(t, "v1.0.0", pod.Spec.Containers[0].Image)
 		})
 
-		t.Run("at halt-height minus 1", func(t *testing.T) {
+		t.Run("one block before upgrade height", func(t *testing.T) {
 			custom := crd.DeepCopy()
 			custom.Status.Height = map[string]uint64{"osmosis-0": 1999}
 
 			pod, err := NewPodBuilder(custom).WithOrdinal(0).Build()
 			require.NoError(t, err)
 
-			// Should use v2.0.0 because halt-height is at 2000 (currentHeight + 1)
+			// height=1999: 2000 <= 2000 ✓ → v2.0.0 (ready for upgrade at block 2000)
 			require.Equal(t, "v2.0.0", pod.Spec.Containers[0].Image)
 		})
 
-		t.Run("at halt-height", func(t *testing.T) {
+		t.Run("at upgrade height", func(t *testing.T) {
 			custom := crd.DeepCopy()
 			custom.Status.Height = map[string]uint64{"osmosis-0": 2000}
 
 			pod, err := NewPodBuilder(custom).WithOrdinal(0).Build()
 			require.NoError(t, err)
 
-			// Should use v2.0.0
+			// height=2000: 2000 <= 2001 ✓ → v2.0.0
 			require.Equal(t, "v2.0.0", pod.Spec.Containers[0].Image)
 		})
 
-		t.Run("after halt-height", func(t *testing.T) {
+		t.Run("between upgrades", func(t *testing.T) {
 			custom := crd.DeepCopy()
 			custom.Status.Height = map[string]uint64{"osmosis-0": 2500}
 
 			pod, err := NewPodBuilder(custom).WithOrdinal(0).Build()
 			require.NoError(t, err)
 
-			// Should use v2.0.0 (height 2000)
+			// height=2500: 2000 <= 2501 ✓, 3000 <= 2501 ✗ → v2.0.0
 			require.Equal(t, "v2.0.0", pod.Spec.Containers[0].Image)
 		})
 
-		t.Run("upgrade without halt-height", func(t *testing.T) {
+		t.Run("one block before next upgrade", func(t *testing.T) {
 			custom := crd.DeepCopy()
 			custom.Status.Height = map[string]uint64{"osmosis-0": 2999}
 
 			pod, err := NewPodBuilder(custom).WithOrdinal(0).Build()
 			require.NoError(t, err)
 
-			// Should use v2.0.0, NOT v3.0.0 (because SetHaltHeight is false for v3.0.0)
-			require.Equal(t, "v2.0.0", pod.Spec.Containers[0].Image)
+			// height=2999: 3000 <= 3000 ✓ → v3.0.0 (ready for upgrade at block 3000)
+			// SetHaltHeight only affects halt-height config, not image selection
+			require.Equal(t, "v3.0.0", pod.Spec.Containers[0].Image)
+		})
+
+		t.Run("at final upgrade height", func(t *testing.T) {
+			custom := crd.DeepCopy()
+			custom.Status.Height = map[string]uint64{"osmosis-0": 3000}
+
+			pod, err := NewPodBuilder(custom).WithOrdinal(0).Build()
+			require.NoError(t, err)
+
+			// height=3000: 3000 <= 3001 ✓ → v3.0.0
+			require.Equal(t, "v3.0.0", pod.Spec.Containers[0].Image)
 		})
 	})
 }

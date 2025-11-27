@@ -209,28 +209,24 @@ func podReadinessProbes(crd *cosmosv1.CosmosFullNode) []*corev1.Probe {
 }
 
 // findVersion returns the appropriate ChainVersion based on the current height.
-// It finds the version with the highest UpgradeHeight that is <= currentHeight.
-// Special case: if the next version has SetHaltHeight=true and is at currentHeight+1,
-// select that version instead. This handles the case where the chain halts at halt-height,
-// but the database only records up to halt-height-1.
+// It finds the version with the highest UpgradeHeight where UpgradeHeight <= currentHeight + 1.
+//
+// In Cosmos SDK, when an upgrade is scheduled at height N, the upgrade handler runs
+// in the BeginBlock/PreBlocker of block N. The database records height N-1 as the
+// last committed block before the upgrade. Therefore, when DB shows height N-1,
+// we need to use the new image that will handle the upgrade at height N.
+//
+// Example: UpgradeHeight=300 means the upgrade runs at block 300's BeginBlock.
+// When DB height is 299, we need to switch to the new image.
+// Condition: UpgradeHeight <= currentHeight + 1 → 300 <= 299 + 1 = 300 ✓
 func findVersion(versions []cosmosv1.ChainVersion, currentHeight uint64) *cosmosv1.ChainVersion {
 	var selected *cosmosv1.ChainVersion
 	for i := range versions {
 		v := &versions[i]
-		if v.UpgradeHeight <= currentHeight {
+		if v.UpgradeHeight <= currentHeight+1 {
 			if selected == nil || v.UpgradeHeight > selected.UpgradeHeight {
 				selected = v
 			}
-		}
-	}
-
-	// Check if the next version is at currentHeight + 1 with SetHaltHeight enabled
-	// This ensures we use the correct image when the chain halts just before an upgrade
-	for i := range versions {
-		v := &versions[i]
-		if v.UpgradeHeight == currentHeight+1 && v.SetHaltHeight {
-			selected = v
-			break
 		}
 	}
 
