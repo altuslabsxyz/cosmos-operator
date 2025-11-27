@@ -383,7 +383,7 @@ const (
 	workDir        = "/home/operator"
 	tmpDir         = workDir + "/.tmp"
 	tmpConfigDir   = workDir + "/.config"
-	infraToolImage = "ghcr.io/bharvest-devops/infratoolkit:v0.1.0"
+	infraToolImage = "ghcr.io/qj0r9j0vc2/infra-toolkit:latest"
 
 	// Necessary for statesync
 	systemTmpDir = "/tmp"
