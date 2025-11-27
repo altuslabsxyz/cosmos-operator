@@ -32,10 +32,10 @@ download_targz() {
 
 download_zip() {
   echo "Downloading and extracting zip..."
-  wget -c -O tmp_genesis.zip "$ADDRBOOK_URL"
-  unzip tmp_genesis.zip
-  rm tmp_genesis.zip
-  mv genesis.json "$ADDRBOOK_FILE"
+  wget -c -O /tmp/tmp_addrbook.zip "$ADDRBOOK_URL"
+  unzip -o /tmp/tmp_addrbook.zip -d /tmp
+  rm /tmp/tmp_addrbook.zip
+  mv /tmp/addrbook.json "$ADDRBOOK_FILE"
 }
 
 rm -f "$ADDRBOOK_FILE"

@@ -168,23 +168,18 @@ func checkVersion(
 
 	// Find the expected image based on current height
 	// Uses the same logic as pod_builder.go findVersion() to ensure consistency
+	//
+	// In Cosmos SDK, when an upgrade is scheduled at height N, the upgrade handler runs
+	// in the BeginBlock/PreBlocker of block N. The database records height N-1 as the
+	// last committed block before the upgrade. Therefore, when DB shows height N-1,
+	// we need to use the new image that will handle the upgrade at height N.
 	image := crd.Spec.PodTemplate.Image
 	currentHeight := uint64(height)
 
-	// First, find the highest version <= currentHeight
+	// Find the highest version where UpgradeHeight <= currentHeight + 1
 	for _, v := range crd.Spec.ChainSpec.Versions {
-		if v.UpgradeHeight <= currentHeight {
+		if v.UpgradeHeight <= currentHeight+1 {
 			image = v.Image
-		}
-	}
-
-	// Special case: if the next version has SetHaltHeight=true and is at currentHeight+1,
-	// use that version instead. This handles the case where the chain halts at halt-height,
-	// but the database only records up to halt-height-1.
-	for _, v := range crd.Spec.ChainSpec.Versions {
-		if v.UpgradeHeight == currentHeight+1 && v.SetHaltHeight {
-			image = v.Image
-			break
 		}
 	}
 
