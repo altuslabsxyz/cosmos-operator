@@ -566,6 +566,90 @@ HOME="$CHAIN_HOME" gaiad start --home /home/operator/cosmos`
 		require.Nil(t, sidecar.ReadinessProbe)
 	})
 
+	t.Run("custom probe strategy with tcpSocket", func(t *testing.T) {
+		crd := defaultCRD()
+		crd.Spec.PodTemplate.Probes = cosmosv1.FullNodeProbesSpec{
+			Strategy: cosmosv1.FullNodeProbeStrategyCustom,
+			ReadinessProbe: &corev1.Probe{
+				ProbeHandler: corev1.ProbeHandler{
+					TCPSocket: &corev1.TCPSocketAction{
+						Port: intstr.FromInt(8545),
+					},
+				},
+				InitialDelaySeconds: 60,
+				PeriodSeconds:       10,
+				FailureThreshold:    30,
+			},
+		}
+
+		builder := NewPodBuilder(&crd)
+		pod, err := builder.WithOrdinal(1).Build()
+		require.NoError(t, err)
+
+		// Main container should use custom probe
+		mainProbe := pod.Spec.Containers[0].ReadinessProbe
+		require.NotNil(t, mainProbe)
+		require.NotNil(t, mainProbe.TCPSocket)
+		require.Equal(t, intstr.FromInt(8545), mainProbe.TCPSocket.Port)
+		require.Equal(t, int32(60), mainProbe.InitialDelaySeconds)
+		require.Equal(t, int32(10), mainProbe.PeriodSeconds)
+		require.Equal(t, int32(30), mainProbe.FailureThreshold)
+
+		// Sidecar should still use default probe
+		sidecarProbe := pod.Spec.Containers[1].ReadinessProbe
+		require.NotNil(t, sidecarProbe)
+		require.NotNil(t, sidecarProbe.HTTPGet)
+		require.Equal(t, intstr.FromInt(1251), sidecarProbe.HTTPGet.Port)
+	})
+
+	t.Run("custom probe strategy with httpGet", func(t *testing.T) {
+		crd := defaultCRD()
+		crd.Spec.PodTemplate.Probes = cosmosv1.FullNodeProbesSpec{
+			Strategy: cosmosv1.FullNodeProbeStrategyCustom,
+			ReadinessProbe: &corev1.Probe{
+				ProbeHandler: corev1.ProbeHandler{
+					HTTPGet: &corev1.HTTPGetAction{
+						Path:   "/status",
+						Port:   intstr.FromInt(8545),
+						Scheme: corev1.URISchemeHTTP,
+					},
+				},
+				InitialDelaySeconds: 30,
+				PeriodSeconds:       5,
+				FailureThreshold:    20,
+			},
+		}
+
+		builder := NewPodBuilder(&crd)
+		pod, err := builder.WithOrdinal(1).Build()
+		require.NoError(t, err)
+
+		mainProbe := pod.Spec.Containers[0].ReadinessProbe
+		require.NotNil(t, mainProbe)
+		require.NotNil(t, mainProbe.HTTPGet)
+		require.Equal(t, "/status", mainProbe.HTTPGet.Path)
+		require.Equal(t, intstr.FromInt(8545), mainProbe.HTTPGet.Port)
+	})
+
+	t.Run("custom probe strategy without readinessProbe falls back to default", func(t *testing.T) {
+		crd := defaultCRD()
+		crd.Spec.PodTemplate.Probes = cosmosv1.FullNodeProbesSpec{
+			Strategy: cosmosv1.FullNodeProbeStrategyCustom,
+			// ReadinessProbe is nil
+		}
+
+		builder := NewPodBuilder(&crd)
+		pod, err := builder.WithOrdinal(1).Build()
+		require.NoError(t, err)
+
+		// Should fall back to default probe when ReadinessProbe is nil
+		mainProbe := pod.Spec.Containers[0].ReadinessProbe
+		require.NotNil(t, mainProbe)
+		require.NotNil(t, mainProbe.HTTPGet)
+		require.Equal(t, "/health", mainProbe.HTTPGet.Path)
+		require.Equal(t, intstr.FromInt(26657), mainProbe.HTTPGet.Port)
+	})
+
 	t.Run("strategic merge fields", func(t *testing.T) {
 		crd := defaultCRD()
 		crd.Spec.PodTemplate.Volumes = []corev1.Volume{

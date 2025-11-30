@@ -175,6 +175,7 @@ func podReadinessProbes(crd *cosmosv1.CosmosFullNode) []*corev1.Probe {
 		return []*corev1.Probe{nil, nil}
 	}
 
+	// Default main probe for Cosmos RPC port
 	mainProbe := &corev1.Probe{
 		ProbeHandler: corev1.ProbeHandler{
 			HTTPGet: &corev1.HTTPGetAction{
@@ -188,6 +189,12 @@ func podReadinessProbes(crd *cosmosv1.CosmosFullNode) []*corev1.Probe {
 		PeriodSeconds:       10,
 		SuccessThreshold:    1,
 		FailureThreshold:    5,
+	}
+
+	// Use custom readiness probe if specified with Custom strategy
+	if crd.Spec.PodTemplate.Probes.Strategy == cosmosv1.FullNodeProbeStrategyCustom &&
+		crd.Spec.PodTemplate.Probes.ReadinessProbe != nil {
+		mainProbe = crd.Spec.PodTemplate.Probes.ReadinessProbe.DeepCopy()
 	}
 
 	sidecarProbe := &corev1.Probe{
