@@ -275,12 +275,12 @@ func TestPodBuilder(t *testing.T) {
 		require.Len(t, lo.Map(pod.Spec.InitContainers, func(c corev1.Container, _ int) string { return c.Name }), 7)
 
 		wantInitImages := []string{
-			"ghcr.io/bharvest-devops/infratoolkit:v0.1.0",
+			"ghcr.io/qj0r9j0vc2/infra-toolkit:latest",
 			"main-image:v1.2.3",
-			"ghcr.io/bharvest-devops/infratoolkit:v0.1.0",
-			"ghcr.io/bharvest-devops/infratoolkit:v0.1.0",
-			"ghcr.io/bharvest-devops/infratoolkit:v0.1.0",
-			"ghcr.io/bharvest-devops/infratoolkit:v0.1.0",
+			"ghcr.io/qj0r9j0vc2/infra-toolkit:latest",
+			"ghcr.io/qj0r9j0vc2/infra-toolkit:latest",
+			"ghcr.io/qj0r9j0vc2/infra-toolkit:latest",
+			"ghcr.io/qj0r9j0vc2/infra-toolkit:latest",
 			"ghcr.io/b-harvest/cosmos-operator:latest",
 		}
 		require.Equal(t, wantInitImages, lo.Map(pod.Spec.InitContainers, func(c corev1.Container, _ int) string {
