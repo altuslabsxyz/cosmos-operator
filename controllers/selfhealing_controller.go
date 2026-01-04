@@ -28,6 +28,7 @@ import (
 	"github.com/b-harvest/cosmos-operator/internal/fullnode"
 	"github.com/b-harvest/cosmos-operator/internal/healthcheck"
 	"github.com/b-harvest/cosmos-operator/internal/kube"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -37,11 +38,12 @@ import (
 // SelfHealingReconciler reconciles the self healing portion of a CosmosFullNode object
 type SelfHealingReconciler struct {
 	client.Client
-	cacheController *cosmos.CacheController
-	diskClient      *fullnode.DiskUsageCollector
-	driftDetector   fullnode.DriftDetection
-	pvcAutoScaler   *fullnode.PVCAutoScaler
-	recorder        record.EventRecorder
+	cacheController     *cosmos.CacheController
+	diskClient          *fullnode.DiskUsageCollector
+	driftDetector       fullnode.DriftDetection
+	pvcAutoScaler       *fullnode.PVCAutoScaler
+	deepRecoveryManager *fullnode.DeepRecoveryManager
+	recorder            record.EventRecorder
 }
 
 func NewSelfHealing(
@@ -52,12 +54,13 @@ func NewSelfHealing(
 	cacheController *cosmos.CacheController,
 ) *SelfHealingReconciler {
 	return &SelfHealingReconciler{
-		Client:          client,
-		cacheController: cacheController,
-		diskClient:      fullnode.NewDiskUsageCollector(healthcheck.NewClient(httpClient), client),
-		driftDetector:   fullnode.NewDriftDetection(cacheController),
-		pvcAutoScaler:   fullnode.NewPVCAutoScaler(statusClient),
-		recorder:        recorder,
+		Client:              client,
+		cacheController:     cacheController,
+		diskClient:          fullnode.NewDiskUsageCollector(healthcheck.NewClient(httpClient), client),
+		driftDetector:       fullnode.NewDriftDetection(cacheController),
+		pvcAutoScaler:       fullnode.NewPVCAutoScaler(statusClient),
+		deepRecoveryManager: fullnode.NewDeepRecoveryManager(client),
+		recorder:            recorder,
 	}
 }
 
@@ -135,6 +138,116 @@ func (r *SelfHealingReconciler) mitigateHeightDrift(ctx context.Context, reporte
 		msg := fmt.Sprintf("Height lagged behind by %d or more blocks; deleted pod(s)", crd.Spec.SelfHeal.HeightDriftMitigation.Threshold)
 		reporter.RecordInfo("HeightDriftMitigation", msg)
 	}
+
+	// Handle deep recovery if enabled
+	r.handleDeepRecovery(ctx, reporter, crd)
+}
+
+func (r *SelfHealingReconciler) handleDeepRecovery(ctx context.Context, reporter kube.Reporter, crd *cosmosv1.CosmosFullNode) {
+	spec := crd.Spec.SelfHeal.HeightDriftMitigation.DeepRecovery
+	if spec == nil || spec.Suspend {
+		return
+	}
+
+	// Find pods that might be stuck (height not changing)
+	stuckPods := r.detectStuckPods(ctx, crd)
+	if len(stuckPods) == 0 {
+		// Cleanup recovered pods if any
+		if err := r.deepRecoveryManager.CleanupRecoveredPods(ctx, crd); err != nil {
+			reporter.Error(err, "Failed to cleanup recovered pods")
+		}
+		return
+	}
+
+	actionTaken, err := r.deepRecoveryManager.CheckAndTriggerRecovery(ctx, crd, stuckPods)
+	if err != nil {
+		reporter.Error(err, "Failed to process deep recovery")
+		reporter.RecordError("DeepRecoveryError", err)
+		return
+	}
+
+	if actionTaken {
+		// Update status
+		if err := r.Status().Update(ctx, crd); err != nil {
+			reporter.Error(err, "Failed to update deep recovery status")
+			return
+		}
+		reporter.Info("Deep recovery action taken")
+		reporter.RecordInfo("DeepRecovery", "Processing stuck pod recovery")
+	}
+}
+
+func (r *SelfHealingReconciler) detectStuckPods(ctx context.Context, crd *cosmosv1.CosmosFullNode) []fullnode.PodStuckInfo {
+	if crd.Status.Height == nil || len(crd.Status.Height) == 0 {
+		return nil
+	}
+
+	// Find max height
+	var maxHeight uint64
+	for _, height := range crd.Status.Height {
+		if height > maxHeight {
+			maxHeight = height
+		}
+	}
+
+	if maxHeight == 0 {
+		return nil
+	}
+
+	threshold := crd.Spec.SelfHeal.HeightDriftMitigation.Threshold
+	var stuckPods []fullnode.PodStuckInfo
+
+	// Get existing deep recovery status for tracking
+	var existingStatus map[string]*cosmosv1.DeepRecoveryStatus
+	if crd.Status.SelfHealing.DeepRecovery != nil {
+		existingStatus = crd.Status.SelfHealing.DeepRecovery
+	}
+
+	for podName, height := range crd.Status.Height {
+		// Check if significantly lagging
+		if maxHeight-height < uint64(threshold) {
+			continue
+		}
+
+		// Check if already being tracked and height hasn't changed
+		if existingStatus != nil {
+			if status, exists := existingStatus[podName]; exists {
+				// If height changed, this pod is not stuck
+				if status.StuckHeight > 0 && height != status.StuckHeight {
+					continue
+				}
+			}
+		}
+
+		// Find PVC name for this pod
+		pvcName := r.getPVCNameForPod(ctx, crd, podName)
+
+		stuckPods = append(stuckPods, fullnode.PodStuckInfo{
+			PodName:       podName,
+			CurrentHeight: height,
+			MaxHeight:     maxHeight,
+			PVCName:       pvcName,
+		})
+	}
+
+	return stuckPods
+}
+
+func (r *SelfHealingReconciler) getPVCNameForPod(ctx context.Context, crd *cosmosv1.CosmosFullNode, podName string) string {
+	// Get pod to find PVC
+	pod := &corev1.Pod{}
+	if err := r.Get(ctx, client.ObjectKey{Name: podName, Namespace: crd.Namespace}, pod); err != nil {
+		return ""
+	}
+
+	// Find PVC from pod volumes
+	for _, vol := range pod.Spec.Volumes {
+		if vol.PersistentVolumeClaim != nil {
+			return vol.PersistentVolumeClaim.ClaimName
+		}
+	}
+
+	return ""
 }
 
 // SetupWithManager sets up the controller with the Manager.

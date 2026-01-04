@@ -5736,6 +5736,113 @@ spec:
                     description: Take action when a pod's height falls behind the
                       max height of all pods AND still reports itself as in-sync.
                     properties:
+                      deepRecovery:
+                        description: |-
+                          DeepRecovery enables advanced recovery for pods that are completely stuck.
+                          When enabled, if a pod's height doesn't change for StuckDuration, a recovery script is executed.
+                        properties:
+                          maxRetries:
+                            description: |-
+                              Maximum number of recovery attempts within the rate limit window.
+                              Default: 3
+                            format: int32
+                            minimum: 1
+                            type: integer
+                          podTemplate:
+                            description: |-
+                              Pod template for running the recovery script.
+                              If not specified, uses a default busybox pod.
+                            properties:
+                              command:
+                                description: Command to run in the recovery pod.
+                                items:
+                                  type: string
+                                type: array
+                              image:
+                                description: Image to use for the recovery pod.
+                                type: string
+                              resources:
+                                description: Resource requirements for the recovery
+                                  pod.
+                                properties:
+                                  limits:
+                                    additionalProperties:
+                                      anyOf:
+                                      - type: integer
+                                      - type: string
+                                      pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                      x-kubernetes-int-or-string: true
+                                    description: |-
+                                      Limits describes the maximum amount of compute resources allowed.
+                                      More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+                                    type: object
+                                  requests:
+                                    additionalProperties:
+                                      anyOf:
+                                      - type: integer
+                                      - type: string
+                                      pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                      x-kubernetes-int-or-string: true
+                                    description: |-
+                                      Requests describes the minimum amount of compute resources required.
+                                      If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
+                                      otherwise to an implementation-defined value.
+                                      More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+                                    type: object
+                                type: object
+                            type: object
+                          rateLimitWindow:
+                            description: |-
+                              Rate limit window duration (default: 5m).
+                              If maxRetries is exceeded within this window, recovery is suspended.
+                            pattern: ^([0-9]+(\.[0-9]+)?(s|m|h))+$
+                            type: string
+                          recoveryScript:
+                            description: |-
+                              Shell script to execute for recovery.
+                              The script will have access to environment variables:
+                              - POD_NAME: Name of the stuck pod
+                              - POD_NAMESPACE: Namespace of the stuck pod
+                              - CURRENT_HEIGHT: Current height of the stuck pod
+                              - PVC_NAME: Name of the PVC
+                              - CHAIN_HOME: Home directory of the chain
+                            type: string
+                          stuckDuration:
+                            description: |-
+                              Duration to wait before considering height as stuck.
+                              If pod's height doesn't change for this duration, recovery is triggered.
+                              Examples: "5m", "10m", "1h"
+                            pattern: ^([0-9]+(\.[0-9]+)?(s|m|h))+$
+                            type: string
+                          suspend:
+                            description: Suspend deep recovery operations.
+                            type: boolean
+                          volumeSnapshot:
+                            description: VolumeSnapshot settings for backup before
+                              recovery.
+                            properties:
+                              enabled:
+                                default: false
+                                description: Enabled creates a VolumeSnapshot before
+                                  running recovery script.
+                                type: boolean
+                              retentionCount:
+                                default: 3
+                                description: 'RetentionCount is maximum snapshots
+                                  to keep per pod (default: 3).'
+                                format: int32
+                                minimum: 1
+                                type: integer
+                              volumeSnapshotClassName:
+                                description: VolumeSnapshotClassName to use.
+                                type: string
+                            required:
+                            - enabled
+                            type: object
+                        required:
+                        - recoveryScript
+                        - stuckDuration
+                        type: object
                       threshold:
                         description: |-
                           If pod's height falls behind the max height of all pods by this value or more AND the pod's RPC /status endpoint
@@ -6139,6 +6246,55 @@ spec:
               selfHealing:
                 description: Status set by the SelfHealing controller.
                 properties:
+                  deepRecovery:
+                    additionalProperties:
+                      description: DeepRecoveryStatus tracks recovery state for a
+                        single pod.
+                      properties:
+                        detectedAt:
+                          description: When the stuck condition was first detected.
+                          format: date-time
+                          type: string
+                        lastAttemptAt:
+                          description: When the last recovery attempt was made.
+                          format: date-time
+                          type: string
+                        message:
+                          description: Message providing additional details about
+                            the current phase.
+                          type: string
+                        phase:
+                          description: Current phase of recovery.
+                          enum:
+                          - Idle
+                          - Detected
+                          - SnapshotCreating
+                          - SnapshotReady
+                          - RecoveryRunning
+                          - RecoveryCompleted
+                          - RecoveryFailed
+                          - RateLimited
+                          type: string
+                        recoveryPodName:
+                          description: Name of the recovery pod.
+                          type: string
+                        retryCount:
+                          description: Number of recovery attempts in the current
+                            rate limit window.
+                          format: int32
+                          type: integer
+                        snapshotName:
+                          description: Name of the VolumeSnapshot created for recovery.
+                          type: string
+                        stuckHeight:
+                          description: Last known height when stuck was detected.
+                          format: int64
+                          type: integer
+                      required:
+                      - phase
+                      type: object
+                    description: DeepRecovery status per pod.
+                    type: object
                   pvcAutoScaler:
                     additionalProperties:
                       properties:
