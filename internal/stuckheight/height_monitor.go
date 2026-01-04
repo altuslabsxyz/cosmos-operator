@@ -55,6 +55,8 @@ type HeightCheckResult struct {
 	RecoveredPods map[string]uint64
 	// All pods with their current heights
 	AllPodHeights map[string]uint64
+	// Pods that were being tracked but no longer exist (e.g., replica count reduced)
+	DeletedPods []string
 }
 
 // CheckStuckHeight checks all pods for stuck height and recovery
@@ -127,6 +129,13 @@ func (m *HeightMonitor) CheckStuckHeight(
 				// Pod is lagging - start tracking
 				result.LaggingPods[podName] = currentHeight
 			}
+		}
+	}
+
+	// Detect pods that were being tracked but no longer exist (e.g., replica count reduced)
+	for podName := range recovery.Status.StuckPods {
+		if _, exists := crd.Status.Height[podName]; !exists {
+			result.DeletedPods = append(result.DeletedPods, podName)
 		}
 	}
 

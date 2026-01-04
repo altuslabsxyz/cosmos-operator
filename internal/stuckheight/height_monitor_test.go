@@ -349,4 +349,51 @@ func TestHeightMonitor_CheckStuckHeight(t *testing.T) {
 		require.Contains(t, result.RecoveredPods, "test-pod-0")
 		require.Contains(t, result.RecoveredPods, "test-pod-1")
 	})
+
+	t.Run("deleted pods - replica count reduced", func(t *testing.T) {
+		mock := &mockClient{}
+		monitor := NewHeightMonitor(mock)
+
+		// Only 2 pods exist now (replica count reduced from 4 to 2)
+		crd := &cosmosv1.CosmosFullNode{
+			Status: cosmosv1.FullNodeStatus{
+				Height: map[string]uint64{
+					"test-pod-0": 1000,
+					"test-pod-1": 1000,
+				},
+			},
+		}
+
+		pastTime := metav1.NewTime(time.Now().Add(-10 * time.Minute))
+		recovery := &cosmosv1.StuckHeightRecovery{
+			Spec: cosmosv1.StuckHeightRecoverySpec{
+				StuckDuration: "5m",
+			},
+			Status: cosmosv1.StuckHeightRecoveryStatus{
+				StuckPods: map[string]*cosmosv1.StuckPodRecoveryStatus{
+					// These pods were being tracked but have been deleted
+					"test-pod-2": {
+						PodName:       "test-pod-2",
+						StuckAtHeight: 100,
+						DetectedAt:    pastTime,
+						Phase:         cosmosv1.PodRecoveryPhaseWaitingForSnapshot,
+					},
+					"test-pod-3": {
+						PodName:       "test-pod-3",
+						StuckAtHeight: 100,
+						DetectedAt:    pastTime,
+						Phase:         cosmosv1.PodRecoveryPhaseRecovering,
+					},
+				},
+			},
+		}
+
+		result, err := monitor.CheckStuckHeight(ctx, crd, recovery)
+
+		require.NoError(t, err)
+		require.Equal(t, uint64(1000), result.MaxHeight)
+		require.Len(t, result.DeletedPods, 2)
+		require.Contains(t, result.DeletedPods, "test-pod-2")
+		require.Contains(t, result.DeletedPods, "test-pod-3")
+	})
 }

@@ -1853,6 +1853,14 @@ spec:
                   - PVC_NAME: Name of the PVC
                   - CHAIN_HOME: Home directory of the chain
                 type: string
+              snapshotLimit:
+                description: |-
+                  Maximum number of VolumeSnapshots to keep per StuckHeightRecovery
+                  Older snapshots will be automatically deleted after recovery completes
+                  Default: 3
+                format: int32
+                minimum: 1
+                type: integer
               stuckDuration:
                 description: |-
                   Duration to wait before considering height as stuck

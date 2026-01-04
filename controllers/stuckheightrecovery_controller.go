@@ -194,6 +194,39 @@ func (r *StuckHeightRecoveryReconciler) handleMonitoring(
 		r.rateLimiter.ResetWindow(recovery)
 	}
 
+	// Handle pods that no longer exist (e.g., replica count reduced)
+	crdStatusModified := false
+	for _, podName := range result.DeletedPods {
+		if stuckPod, exists := recovery.Status.StuckPods[podName]; exists {
+			reporter.Info(fmt.Sprintf("Pod %s no longer exists (replica reduced?), removing from tracking", podName))
+			reporter.RecordInfo("PodDeleted", fmt.Sprintf("Pod %s no longer exists, removed from tracking", podName))
+
+			// Add to history
+			recovery.Status.RecoveryHistory = append(recovery.Status.RecoveryHistory, cosmosv1.RecoveryHistoryEntry{
+				Timestamp: now,
+				PodName:   podName,
+				Height:    stuckPod.StuckAtHeight,
+				EventType: "pod_deleted",
+				Message:   "Pod no longer exists (replica count reduced)",
+			})
+
+			// Clean up from CosmosFullNode status if needed
+			if crd.Status.StuckHeightRecoveryStatus != nil {
+				recoveryKey := fmt.Sprintf("%s-%s", recovery.Name, podName)
+				delete(crd.Status.StuckHeightRecoveryStatus, recoveryKey)
+				crdStatusModified = true
+			}
+
+			delete(recovery.Status.StuckPods, podName)
+		}
+	}
+	// Update crd status if we modified it
+	if crdStatusModified {
+		if err := r.Status().Update(ctx, crd); err != nil {
+			reporter.Error(err, "Failed to update CosmosFullNode status after removing deleted pods")
+		}
+	}
+
 	// Handle lagging pods - track them to detect if they become stuck
 	for podName, laggingHeight := range result.LaggingPods {
 		// Check if we're already tracking this pod
@@ -312,6 +345,31 @@ func (r *StuckHeightRecoveryReconciler) handleRecovering(
 			recovery.Status.LastHeightUpdateTime = &now
 		}
 
+		// Handle pods that no longer exist (e.g., replica count reduced)
+		for _, podName := range result.DeletedPods {
+			if stuckPod, exists := recovery.Status.StuckPods[podName]; exists {
+				reporter.Info(fmt.Sprintf("Pod %s no longer exists (replica reduced?), removing from tracking", podName))
+				reporter.RecordInfo("PodDeleted", fmt.Sprintf("Pod %s no longer exists, removed from tracking", podName))
+
+				// Add to history
+				recovery.Status.RecoveryHistory = append(recovery.Status.RecoveryHistory, cosmosv1.RecoveryHistoryEntry{
+					Timestamp: now,
+					PodName:   podName,
+					Height:    stuckPod.StuckAtHeight,
+					EventType: "pod_deleted",
+					Message:   "Pod no longer exists (replica count reduced)",
+				})
+
+				// Clean up from CosmosFullNode status if needed
+				if crd.Status.StuckHeightRecoveryStatus != nil {
+					recoveryKey := fmt.Sprintf("%s-%s", recovery.Name, podName)
+					delete(crd.Status.StuckHeightRecoveryStatus, recoveryKey)
+				}
+
+				delete(recovery.Status.StuckPods, podName)
+			}
+		}
+
 		// Handle newly stuck pods (Lagging → Stuck transition)
 		for podName, stuckHeight := range result.NewlyStuckPods {
 			stuckPod := recovery.Status.StuckPods[podName]
@@ -428,6 +486,19 @@ func (r *StuckHeightRecoveryReconciler) handleRecovering(
 	// Clean up completed pods and update CosmosFullNode status
 	if err := r.cleanupCompletedPods(ctx, recovery, crd, reporter); err != nil {
 		return ctrl.Result{RequeueAfter: 10 * time.Second}, err
+	}
+
+	// Clean up old VolumeSnapshots if snapshot creation is enabled
+	if recovery.Spec.CreateVolumeSnapshot {
+		logger := log.FromContext(ctx)
+		limit := stuckheight.DefaultSnapshotLimit
+		if recovery.Spec.SnapshotLimit != nil && *recovery.Spec.SnapshotLimit > 0 {
+			limit = int(*recovery.Spec.SnapshotLimit)
+		}
+		if err := r.snapshotCreator.DeleteOldSnapshots(ctx, logger, recovery.Namespace, recovery.Name, limit); err != nil {
+			reporter.Error(err, "Failed to delete old snapshots")
+			// Don't fail reconcile for snapshot cleanup errors
+		}
 	}
 
 	// Update overall status

@@ -977,6 +977,11 @@ func (in *StuckHeightRecoverySpec) DeepCopyInto(out *StuckHeightRecoverySpec) {
 		*out = new(RecoveryPodTemplate)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.SnapshotLimit != nil {
+		in, out := &in.SnapshotLimit, &out.SnapshotLimit
+		*out = new(int32)
+		**out = **in
+	}
 	if in.MaxRetries != nil {
 		in, out := &in.MaxRetries, &out.MaxRetries
 		*out = new(int32)

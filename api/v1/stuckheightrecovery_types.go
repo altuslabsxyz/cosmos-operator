@@ -63,6 +63,13 @@ type StuckHeightRecoverySpec struct {
 	// +optional
 	VolumeSnapshotClassName string `json:"volumeSnapshotClassName,omitempty"`
 
+	// Maximum number of VolumeSnapshots to keep per StuckHeightRecovery
+	// Older snapshots will be automatically deleted after recovery completes
+	// Default: 3
+	// +kubebuilder:validation:Minimum=1
+	// +optional
+	SnapshotLimit *int32 `json:"snapshotLimit,omitempty"`
+
 	// Maximum number of recovery attempts within the rate limit window
 	// Default: 3
 	// +kubebuilder:validation:Minimum=1

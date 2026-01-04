@@ -88,6 +88,8 @@ func (m *mockClient) List(ctx context.Context, list client.ObjectList, opts ...c
 		*ref = m.ObjectList.(corev1.PodList)
 	case *cosmosv1.CosmosFullNodeList:
 		*ref = m.ObjectList.(cosmosv1.CosmosFullNodeList)
+	case *snapshotv1.VolumeSnapshotList:
+		*ref = m.ObjectList.(snapshotv1.VolumeSnapshotList)
 	default:
 		panic(fmt.Errorf("unknown ObjectList type: %T", list))
 	}

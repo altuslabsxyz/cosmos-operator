@@ -18,16 +18,26 @@ package stuckheight
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"sort"
 	"time"
 
 	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
+	"github.com/b-harvest/cosmos-operator/internal/kube"
+	"github.com/go-logr/logr"
 	snapshotv1 "github.com/kubernetes-csi/external-snapshotter/client/v6/apis/volumesnapshot/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
+
+// Label used to identify snapshots created by StuckHeightRecovery
+const recoverySnapshotLabel = "cosmos.bharvest.io/recovery"
+
+// DefaultSnapshotLimit is the default number of snapshots to keep
+const DefaultSnapshotLimit = 3
 
 // SnapshotCreator creates VolumeSnapshots
 type SnapshotCreator struct {
@@ -127,4 +137,66 @@ func (s *SnapshotCreator) GetPVCForPod(
 	}
 
 	return "", fmt.Errorf("no PVC found for pod %s", podName)
+}
+
+// DeleteOldSnapshots deletes old VolumeSnapshots keeping only the most recent ones up to the limit.
+// Snapshots are identified by the recovery label (cosmos.bharvest.io/recovery).
+// If limit is <= 0, defaults to DefaultSnapshotLimit (3).
+func (s *SnapshotCreator) DeleteOldSnapshots(
+	ctx context.Context,
+	log logr.Logger,
+	namespace string,
+	recoveryName string,
+	limit int,
+) error {
+	if limit <= 0 {
+		limit = DefaultSnapshotLimit
+	}
+
+	// List all snapshots with the recovery label
+	var snapshots snapshotv1.VolumeSnapshotList
+	if err := s.client.List(ctx,
+		&snapshots,
+		client.InNamespace(namespace),
+		client.MatchingLabels(map[string]string{recoverySnapshotLabel: recoveryName}),
+	); err != nil {
+		return fmt.Errorf("list volume snapshots: %w", err)
+	}
+
+	// Filter snapshots that have a valid CreationTime
+	var filtered []snapshotv1.VolumeSnapshot
+	for _, snapshot := range snapshots.Items {
+		if snapshot.Status != nil && snapshot.Status.CreationTime != nil {
+			filtered = append(filtered, snapshot)
+		}
+	}
+
+	// Nothing to delete if we're within the limit
+	if len(filtered) <= limit {
+		return nil
+	}
+
+	// Sort by creation time descending (newest first)
+	sort.Slice(filtered, func(i, j int) bool {
+		lhs := filtered[i].Status.CreationTime
+		rhs := filtered[j].Status.CreationTime
+		return !lhs.Before(rhs)
+	})
+
+	// Delete snapshots beyond the limit
+	toDelete := filtered[limit:]
+	var merr error
+	for _, vs := range toDelete {
+		vs := vs
+		log.Info("Deleting old recovery snapshot",
+			"volumeSnapshotName", vs.Name,
+			"recoveryName", recoveryName,
+			"limit", limit,
+		)
+		if err := s.client.Delete(ctx, &vs); kube.IgnoreNotFound(err) != nil {
+			merr = errors.Join(merr, fmt.Errorf("delete %s: %w", vs.Name, err))
+		}
+	}
+
+	return merr
 }

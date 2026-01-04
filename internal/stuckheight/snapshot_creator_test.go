@@ -3,9 +3,11 @@ package stuckheight
 import (
 	"context"
 	"testing"
+	"time"
 
 	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
 	snapshotv1 "github.com/kubernetes-csi/external-snapshotter/client/v6/apis/volumesnapshot/v1"
+	"github.com/go-logr/logr"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -281,5 +283,186 @@ func TestSnapshotCreator_GetPVCForPod(t *testing.T) {
 
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "get pod")
+	})
+}
+
+func TestSnapshotCreator_DeleteOldSnapshots(t *testing.T) {
+	ctx := context.Background()
+	log := logr.Discard()
+	now := time.Now()
+
+	// Helper to create a VolumeSnapshot with proper CreationTime
+	makeSnapshot := func(name string, creationTime time.Time) snapshotv1.VolumeSnapshot {
+		ct := metav1.NewTime(creationTime)
+		return snapshotv1.VolumeSnapshot{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      name,
+				Namespace: "default",
+				Labels: map[string]string{
+					recoverySnapshotLabel: "test-recovery",
+				},
+			},
+			Status: &snapshotv1.VolumeSnapshotStatus{
+				CreationTime: &ct,
+			},
+		}
+	}
+
+	t.Run("deletes old snapshots beyond limit", func(t *testing.T) {
+		mock := &mockClient{}
+		mock.ObjectList = snapshotv1.VolumeSnapshotList{
+			Items: []snapshotv1.VolumeSnapshot{
+				makeSnapshot("snapshot-1", now.Add(-4*time.Hour)), // oldest
+				makeSnapshot("snapshot-2", now.Add(-3*time.Hour)),
+				makeSnapshot("snapshot-3", now.Add(-2*time.Hour)),
+				makeSnapshot("snapshot-4", now.Add(-1*time.Hour)),
+				makeSnapshot("snapshot-5", now), // newest
+			},
+		}
+		creator := NewSnapshotCreator(mock)
+
+		err := creator.DeleteOldSnapshots(ctx, log, "default", "test-recovery", 3)
+
+		require.NoError(t, err)
+		// Should delete 2 oldest snapshots (5 - 3 = 2)
+		require.Equal(t, 2, mock.DeleteCount)
+	})
+
+	t.Run("no deletion when within limit", func(t *testing.T) {
+		mock := &mockClient{}
+		mock.ObjectList = snapshotv1.VolumeSnapshotList{
+			Items: []snapshotv1.VolumeSnapshot{
+				makeSnapshot("snapshot-1", now.Add(-2*time.Hour)),
+				makeSnapshot("snapshot-2", now.Add(-1*time.Hour)),
+				makeSnapshot("snapshot-3", now),
+			},
+		}
+		creator := NewSnapshotCreator(mock)
+
+		err := creator.DeleteOldSnapshots(ctx, log, "default", "test-recovery", 3)
+
+		require.NoError(t, err)
+		require.Equal(t, 0, mock.DeleteCount)
+	})
+
+	t.Run("no deletion when below limit", func(t *testing.T) {
+		mock := &mockClient{}
+		mock.ObjectList = snapshotv1.VolumeSnapshotList{
+			Items: []snapshotv1.VolumeSnapshot{
+				makeSnapshot("snapshot-1", now.Add(-1*time.Hour)),
+				makeSnapshot("snapshot-2", now),
+			},
+		}
+		creator := NewSnapshotCreator(mock)
+
+		err := creator.DeleteOldSnapshots(ctx, log, "default", "test-recovery", 5)
+
+		require.NoError(t, err)
+		require.Equal(t, 0, mock.DeleteCount)
+	})
+
+	t.Run("uses default limit when limit is zero", func(t *testing.T) {
+		mock := &mockClient{}
+		// Create 5 snapshots, default limit is 3, so 2 should be deleted
+		mock.ObjectList = snapshotv1.VolumeSnapshotList{
+			Items: []snapshotv1.VolumeSnapshot{
+				makeSnapshot("snapshot-1", now.Add(-4*time.Hour)),
+				makeSnapshot("snapshot-2", now.Add(-3*time.Hour)),
+				makeSnapshot("snapshot-3", now.Add(-2*time.Hour)),
+				makeSnapshot("snapshot-4", now.Add(-1*time.Hour)),
+				makeSnapshot("snapshot-5", now),
+			},
+		}
+		creator := NewSnapshotCreator(mock)
+
+		err := creator.DeleteOldSnapshots(ctx, log, "default", "test-recovery", 0)
+
+		require.NoError(t, err)
+		require.Equal(t, 2, mock.DeleteCount)
+	})
+
+	t.Run("uses default limit when limit is negative", func(t *testing.T) {
+		mock := &mockClient{}
+		mock.ObjectList = snapshotv1.VolumeSnapshotList{
+			Items: []snapshotv1.VolumeSnapshot{
+				makeSnapshot("snapshot-1", now.Add(-4*time.Hour)),
+				makeSnapshot("snapshot-2", now.Add(-3*time.Hour)),
+				makeSnapshot("snapshot-3", now.Add(-2*time.Hour)),
+				makeSnapshot("snapshot-4", now.Add(-1*time.Hour)),
+				makeSnapshot("snapshot-5", now),
+			},
+		}
+		creator := NewSnapshotCreator(mock)
+
+		err := creator.DeleteOldSnapshots(ctx, log, "default", "test-recovery", -1)
+
+		require.NoError(t, err)
+		require.Equal(t, 2, mock.DeleteCount)
+	})
+
+	t.Run("filters out snapshots without CreationTime", func(t *testing.T) {
+		mock := &mockClient{}
+		snapshotNoStatus := snapshotv1.VolumeSnapshot{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "snapshot-no-status",
+				Namespace: "default",
+				Labels: map[string]string{
+					recoverySnapshotLabel: "test-recovery",
+				},
+			},
+			Status: nil,
+		}
+		snapshotNoCreationTime := snapshotv1.VolumeSnapshot{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "snapshot-no-creation-time",
+				Namespace: "default",
+				Labels: map[string]string{
+					recoverySnapshotLabel: "test-recovery",
+				},
+			},
+			Status: &snapshotv1.VolumeSnapshotStatus{
+				CreationTime: nil,
+			},
+		}
+		mock.ObjectList = snapshotv1.VolumeSnapshotList{
+			Items: []snapshotv1.VolumeSnapshot{
+				makeSnapshot("snapshot-1", now.Add(-2*time.Hour)),
+				snapshotNoStatus,
+				makeSnapshot("snapshot-2", now.Add(-1*time.Hour)),
+				snapshotNoCreationTime,
+				makeSnapshot("snapshot-3", now),
+			},
+		}
+		creator := NewSnapshotCreator(mock)
+
+		// Only 3 valid snapshots, limit is 3, so no deletion
+		err := creator.DeleteOldSnapshots(ctx, log, "default", "test-recovery", 3)
+
+		require.NoError(t, err)
+		require.Equal(t, 0, mock.DeleteCount)
+	})
+
+	t.Run("list error", func(t *testing.T) {
+		mock := &mockClient{}
+		mock.ListErr = errTest
+		creator := NewSnapshotCreator(mock)
+
+		err := creator.DeleteOldSnapshots(ctx, log, "default", "test-recovery", 3)
+
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "list volume snapshots")
+	})
+
+	t.Run("empty snapshot list", func(t *testing.T) {
+		mock := &mockClient{}
+		mock.ObjectList = snapshotv1.VolumeSnapshotList{
+			Items: []snapshotv1.VolumeSnapshot{},
+		}
+		creator := NewSnapshotCreator(mock)
+
+		err := creator.DeleteOldSnapshots(ctx, log, "default", "test-recovery", 3)
+
+		require.NoError(t, err)
+		require.Equal(t, 0, mock.DeleteCount)
 	})
 }
