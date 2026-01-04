@@ -61,6 +61,8 @@ func (m *mockClient[T]) Get(ctx context.Context, key client.ObjectKey, obj clien
 		*ref = m.Object.(cosmosv1.CosmosFullNode)
 	case *snapshotv1.VolumeSnapshot:
 		*ref = m.Object.(snapshotv1.VolumeSnapshot)
+	case *corev1.Pod:
+		*ref = m.Object.(corev1.Pod)
 	default:
 		panic(fmt.Errorf("unknown Object type: %T", m.ObjectList))
 	}
@@ -86,6 +88,10 @@ func (m *mockClient[T]) List(ctx context.Context, list client.ObjectList, opts .
 			*ref = podList
 		}
 		// If not the right type, leave it as empty list
+	case *snapshotv1.VolumeSnapshotList:
+		if snapList, ok := m.ObjectList.(snapshotv1.VolumeSnapshotList); ok {
+			*ref = snapList
+		}
 	case *corev1.PersistentVolumeClaimList:
 		if pvcList, ok := m.ObjectList.(corev1.PersistentVolumeClaimList); ok {
 			*ref = pvcList
