@@ -335,6 +335,16 @@ type FullNodeProbesSpec struct {
 	// Cosmos RPC port (26657), such as EVM JSON-RPC port (8545) for Ethermint-based chains.
 	// +optional
 	ReadinessProbe *corev1.Probe `json:"readinessProbe,omitempty"`
+
+	// MaxBlockAgeSecs defines the maximum age of the latest block in seconds.
+	// If the latest block is older than this value, the node is considered unhealthy
+	// and will be removed from the load balancer. This helps detect nodes that have
+	// fallen behind the chain tip but are not in "catching up" mode.
+	// If not set or set to 0, this check is disabled.
+	// Recommended values: 60-120 seconds for chains with ~5s block time.
+	// +kubebuilder:validation:Minimum:=0
+	// +optional
+	MaxBlockAgeSecs *int64 `json:"maxBlockAgeSecs,omitempty"`
 }
 
 // PersistentVolumeClaimSpec describes the common attributes of storage devices

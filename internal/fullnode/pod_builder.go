@@ -113,6 +113,7 @@ func NewPodBuilder(crd *cosmosv1.CosmosFullNode) PodBuilder {
 					// IMPORTANT: Must use v0.6.2 or later.
 					Image:   "ghcr.io/b-harvest/cosmos-operator:" + version.DockerTag(),
 					Command: []string{"/manager", "healthcheck"},
+					Args:    healthCheckArgs(crd),
 					Ports:   []corev1.ContainerPort{{ContainerPort: healthCheckPort, Protocol: corev1.ProtocolTCP}},
 					Resources: corev1.ResourceRequirements{
 						Requests: corev1.ResourceList{
@@ -213,6 +214,15 @@ func podReadinessProbes(crd *cosmosv1.CosmosFullNode) []*corev1.Probe {
 	}
 
 	return []*corev1.Probe{mainProbe, sidecarProbe}
+}
+
+// healthCheckArgs returns the arguments for the healthcheck sidecar container.
+func healthCheckArgs(crd *cosmosv1.CosmosFullNode) []string {
+	var args []string
+	if crd.Spec.PodTemplate.Probes.MaxBlockAgeSecs != nil && *crd.Spec.PodTemplate.Probes.MaxBlockAgeSecs > 0 {
+		args = append(args, fmt.Sprintf("--max-block-age=%ds", *crd.Spec.PodTemplate.Probes.MaxBlockAgeSecs))
+	}
+	return args
 }
 
 // findVersion returns the appropriate ChainVersion based on the current height.

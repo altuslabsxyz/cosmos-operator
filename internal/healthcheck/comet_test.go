@@ -37,7 +37,7 @@ func TestComet_ServeHTTP(t *testing.T) {
 			return cosmos.CometStatus{}, nil
 		})
 
-		h := NewComet(nopLogger, client, testRPC, 10*time.Second)
+		h := NewComet(nopLogger, client, testRPC, 10*time.Second, 0)
 		w := httptest.NewRecorder()
 		h.ServeHTTP(w, stubReq)
 
@@ -60,7 +60,7 @@ func TestComet_ServeHTTP(t *testing.T) {
 			return stub, nil
 		})
 
-		h := NewComet(nopLogger, client, testRPC, 10*time.Second)
+		h := NewComet(nopLogger, client, testRPC, 10*time.Second, 0)
 		w := httptest.NewRecorder()
 		h.ServeHTTP(w, stubReq)
 
@@ -81,7 +81,7 @@ func TestComet_ServeHTTP(t *testing.T) {
 			return cosmos.CometStatus{}, errors.New("boom")
 		})
 
-		h := NewComet(nopLogger, client, testRPC, 10*time.Second)
+		h := NewComet(nopLogger, client, testRPC, 10*time.Second, 0)
 		w := httptest.NewRecorder()
 		h.ServeHTTP(w, stubReq)
 
@@ -104,7 +104,7 @@ func TestComet_ServeHTTP(t *testing.T) {
 			return cosmos.CometStatus{}, nil
 		})
 
-		h := NewComet(nopLogger, client, testRPC, time.Nanosecond)
+		h := NewComet(nopLogger, client, testRPC, time.Nanosecond, 0)
 		w := httptest.NewRecorder()
 		h.ServeHTTP(w, stubReq)
 
@@ -114,5 +114,72 @@ func TestComet_ServeHTTP(t *testing.T) {
 		case <-time.After(3 * time.Second):
 			require.Fail(t, "context did not time out")
 		}
+	})
+
+	t.Run("block age within limit", func(t *testing.T) {
+		client := mockClient(func(ctx context.Context, rpcHost string) (cosmos.CometStatus, error) {
+			var stub cosmos.CometStatus
+			stub.Result.SyncInfo.CatchingUp = false
+			stub.Result.SyncInfo.LatestBlockTime = time.Now().Add(-30 * time.Second) // 30 seconds ago
+			return stub, nil
+		})
+
+		// Max block age is 60 seconds, block is 30 seconds old - should pass
+		h := NewComet(nopLogger, client, testRPC, 10*time.Second, 60*time.Second)
+		w := httptest.NewRecorder()
+		h.ServeHTTP(w, stubReq)
+
+		require.Equal(t, http.StatusOK, w.Code)
+		var got healthResponse
+		err := json.NewDecoder(w.Body).Decode(&got)
+		require.NoError(t, err)
+
+		require.True(t, got.InSync)
+		require.NotEmpty(t, got.BlockAge) // Should have block age info
+	})
+
+	t.Run("block age exceeds limit", func(t *testing.T) {
+		client := mockClient(func(ctx context.Context, rpcHost string) (cosmos.CometStatus, error) {
+			var stub cosmos.CometStatus
+			stub.Result.SyncInfo.CatchingUp = false
+			stub.Result.SyncInfo.LatestBlockTime = time.Now().Add(-120 * time.Second) // 120 seconds ago
+			return stub, nil
+		})
+
+		// Max block age is 60 seconds, block is 120 seconds old - should fail
+		h := NewComet(nopLogger, client, testRPC, 10*time.Second, 60*time.Second)
+		w := httptest.NewRecorder()
+		h.ServeHTTP(w, stubReq)
+
+		require.Equal(t, http.StatusServiceUnavailable, w.Code)
+		var got healthResponse
+		err := json.NewDecoder(w.Body).Decode(&got)
+		require.NoError(t, err)
+
+		require.False(t, got.InSync)
+		require.Contains(t, got.Error, "block age")
+		require.Contains(t, got.Error, "exceeds max")
+	})
+
+	t.Run("block age check disabled when maxBlockAge is 0", func(t *testing.T) {
+		client := mockClient(func(ctx context.Context, rpcHost string) (cosmos.CometStatus, error) {
+			var stub cosmos.CometStatus
+			stub.Result.SyncInfo.CatchingUp = false
+			stub.Result.SyncInfo.LatestBlockTime = time.Now().Add(-1000 * time.Second) // Very old block
+			return stub, nil
+		})
+
+		// Max block age is 0 (disabled), even very old block should pass
+		h := NewComet(nopLogger, client, testRPC, 10*time.Second, 0)
+		w := httptest.NewRecorder()
+		h.ServeHTTP(w, stubReq)
+
+		require.Equal(t, http.StatusOK, w.Code)
+		var got healthResponse
+		err := json.NewDecoder(w.Body).Decode(&got)
+		require.NoError(t, err)
+
+		require.True(t, got.InSync)
+		require.Empty(t, got.BlockAge) // Should not have block age info when disabled
 	})
 }

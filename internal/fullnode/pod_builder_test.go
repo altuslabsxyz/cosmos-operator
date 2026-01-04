@@ -904,3 +904,42 @@ func TestPVCName(t *testing.T) {
 
 	require.Equal(t, "pvc-osmosis-5", PVCName(pod))
 }
+
+func TestHealthCheckArgs(t *testing.T) {
+	t.Parallel()
+
+	t.Run("maxBlockAgeSecs not set", func(t *testing.T) {
+		crd := defaultCRD()
+		crd.Spec.PodTemplate.Probes.MaxBlockAgeSecs = nil
+
+		args := healthCheckArgs(&crd)
+		require.Empty(t, args)
+	})
+
+	t.Run("maxBlockAgeSecs set to 0", func(t *testing.T) {
+		crd := defaultCRD()
+		zero := int64(0)
+		crd.Spec.PodTemplate.Probes.MaxBlockAgeSecs = &zero
+
+		args := healthCheckArgs(&crd)
+		require.Empty(t, args)
+	})
+
+	t.Run("maxBlockAgeSecs set to 60", func(t *testing.T) {
+		crd := defaultCRD()
+		sixty := int64(60)
+		crd.Spec.PodTemplate.Probes.MaxBlockAgeSecs = &sixty
+
+		args := healthCheckArgs(&crd)
+		require.Equal(t, []string{"--max-block-age=60s"}, args)
+	})
+
+	t.Run("maxBlockAgeSecs set to 120", func(t *testing.T) {
+		crd := defaultCRD()
+		val := int64(120)
+		crd.Spec.PodTemplate.Probes.MaxBlockAgeSecs = &val
+
+		args := healthCheckArgs(&crd)
+		require.Equal(t, []string{"--max-block-age=120s"}, args)
+	})
+}
