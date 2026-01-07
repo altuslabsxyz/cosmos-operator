@@ -393,6 +393,10 @@ func (m *DeepRecoveryManager) createVolumeSnapshot(
 	pod PodStuckInfo,
 	spec *cosmosv1.DeepRecoverySpec,
 ) (string, error) {
+	if pod.PVCName == "" {
+		return "", fmt.Errorf("PVC name is empty for pod %s, cannot create snapshot", pod.PodName)
+	}
+
 	snapshotName := fmt.Sprintf("%s-recovery-%d", pod.PVCName, time.Now().Unix())
 
 	snapshot := &snapshotv1.VolumeSnapshot{

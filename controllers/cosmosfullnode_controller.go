@@ -243,6 +243,14 @@ func (r *CosmosFullNodeReconciler) updateStatus(
 				status.Height[k] = *v.Height + 1 // we want the block that is going through consensus, not the committed one.
 			}
 		}
+		// Cleanup Height entries for pods that no longer exist (e.g., replicas reduced)
+		if status.Height != nil {
+			for podName := range status.Height {
+				if _, exists := syncInfo[podName]; !exists {
+					delete(status.Height, podName)
+				}
+			}
+		}
 		if status.SelfHealing.PVCAutoScale != nil {
 			for _, k := range pvcStatusChanges.Deleted {
 				delete(status.SelfHealing.PVCAutoScale, k)

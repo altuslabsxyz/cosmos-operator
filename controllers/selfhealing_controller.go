@@ -151,6 +151,14 @@ func (r *SelfHealingReconciler) handleDeepRecovery(ctx context.Context, reporter
 		return
 	}
 
+	// Cleanup DeepRecovery status for pods that no longer exist (e.g., replicas reduced)
+	statusChanged := r.cleanupStaleDeepRecoveryStatus(crd)
+	if statusChanged {
+		if err := r.Status().Update(ctx, crd); err != nil {
+			reporter.Error(err, "Failed to cleanup stale deep recovery status")
+		}
+	}
+
 	// Find pods that might be stuck (height not changing)
 	stuckPods := r.detectStuckPods(ctx, crd)
 	if len(stuckPods) == 0 {
@@ -281,6 +289,26 @@ func extractOrdinalFromPodName(podName string) int {
 	}
 
 	return ordinal
+}
+
+// cleanupStaleDeepRecoveryStatus removes DeepRecovery status entries for pods
+// that no longer exist (e.g., when replicas are reduced).
+// Returns true if any entries were removed.
+func (r *SelfHealingReconciler) cleanupStaleDeepRecoveryStatus(crd *cosmosv1.CosmosFullNode) bool {
+	if crd.Status.SelfHealing.DeepRecovery == nil {
+		return false
+	}
+
+	changed := false
+	for podName := range crd.Status.SelfHealing.DeepRecovery {
+		ordinal := extractOrdinalFromPodName(podName)
+		if ordinal < 0 || ordinal >= int(crd.Spec.Replicas) {
+			delete(crd.Status.SelfHealing.DeepRecovery, podName)
+			changed = true
+		}
+	}
+
+	return changed
 }
 
 // SetupWithManager sets up the controller with the Manager.
