@@ -21,6 +21,8 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
 
 	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
@@ -204,6 +206,13 @@ func (r *SelfHealingReconciler) detectStuckPods(ctx context.Context, crd *cosmos
 	}
 
 	for podName, height := range crd.Status.Height {
+		// Skip pods that are outside the current replica range
+		// This handles the case where replicas were reduced but height status still has old entries
+		ordinal := extractOrdinalFromPodName(podName)
+		if ordinal < 0 || ordinal >= int(crd.Spec.Replicas) {
+			continue
+		}
+
 		// Check if significantly lagging
 		if maxHeight-height < uint64(threshold) {
 			continue
@@ -234,20 +243,44 @@ func (r *SelfHealingReconciler) detectStuckPods(ctx context.Context, crd *cosmos
 }
 
 func (r *SelfHealingReconciler) getPVCNameForPod(ctx context.Context, crd *cosmosv1.CosmosFullNode, podName string) string {
-	// Get pod to find PVC
+	// Try to get PVC name from pod volumes first
 	pod := &corev1.Pod{}
-	if err := r.Get(ctx, client.ObjectKey{Name: podName, Namespace: crd.Namespace}, pod); err != nil {
-		return ""
-	}
-
-	// Find PVC from pod volumes
-	for _, vol := range pod.Spec.Volumes {
-		if vol.PersistentVolumeClaim != nil {
-			return vol.PersistentVolumeClaim.ClaimName
+	if err := r.Get(ctx, client.ObjectKey{Name: podName, Namespace: crd.Namespace}, pod); err == nil {
+		// Find PVC from pod volumes
+		for _, vol := range pod.Spec.Volumes {
+			if vol.PersistentVolumeClaim != nil {
+				return vol.PersistentVolumeClaim.ClaimName
+			}
 		}
 	}
 
+	// Fallback: derive PVC name from pod name using naming convention
+	// Pod name format: {crd.Name}-{ordinal}
+	// PVC name format: pvc-{crd.Name}-{ordinal}
+	ordinal := extractOrdinalFromPodName(podName)
+	if ordinal >= 0 {
+		return fmt.Sprintf("pvc-%s-%d", crd.Name, ordinal)
+	}
+
 	return ""
+}
+
+// extractOrdinalFromPodName extracts the ordinal number from a pod name
+// Pod names follow the pattern: {name}-{ordinal}, e.g., "stable-full-988-1-0" returns 0
+func extractOrdinalFromPodName(podName string) int {
+	// Find the last hyphen and extract the number after it
+	lastHyphen := strings.LastIndex(podName, "-")
+	if lastHyphen == -1 || lastHyphen == len(podName)-1 {
+		return -1
+	}
+
+	ordinalStr := podName[lastHyphen+1:]
+	ordinal, err := strconv.Atoi(ordinalStr)
+	if err != nil {
+		return -1
+	}
+
+	return ordinal
 }
 
 // SetupWithManager sets up the controller with the Manager.
