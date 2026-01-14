@@ -177,10 +177,18 @@ func checkVersion(
 	currentHeight := uint64(height)
 
 	// Find the highest version where UpgradeHeight <= currentHeight + 1
-	for _, v := range crd.Spec.ChainSpec.Versions {
+	// This must match the logic in pod_builder.go findVersion() exactly
+	var selectedVersion *cosmosv1.ChainVersion
+	for i := range crd.Spec.ChainSpec.Versions {
+		v := &crd.Spec.ChainSpec.Versions[i]
 		if v.UpgradeHeight <= currentHeight+1 {
-			image = v.Image
+			if selectedVersion == nil || v.UpgradeHeight > selectedVersion.UpgradeHeight {
+				selectedVersion = v
+			}
 		}
+	}
+	if selectedVersion != nil {
+		image = selectedVersion.Image
 	}
 
 	var thisPodImage string
