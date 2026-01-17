@@ -188,7 +188,7 @@ func (r *SelfHealingReconciler) handleDeepRecovery(ctx context.Context, reporter
 }
 
 func (r *SelfHealingReconciler) detectStuckPods(ctx context.Context, crd *cosmosv1.CosmosFullNode) []fullnode.PodStuckInfo {
-	if crd.Status.Height == nil || len(crd.Status.Height) == 0 {
+	if len(crd.Status.Height) == 0 {
 		return nil
 	}
 

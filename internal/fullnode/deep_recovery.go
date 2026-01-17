@@ -404,10 +404,10 @@ func (m *DeepRecoveryManager) createVolumeSnapshot(
 			Name:      snapshotName,
 			Namespace: crd.Namespace,
 			Labels: map[string]string{
-				"app.kubernetes.io/managed-by":   "cosmos-operator",
-				"cosmos.bharvest.io/recovery":    crd.Name,
-				"cosmos.bharvest.io/pod":         pod.PodName,
-				"cosmos.bharvest.io/type":        "deep-recovery-backup",
+				"app.kubernetes.io/managed-by": "cosmos-operator",
+				"cosmos.bharvest.io/recovery":  crd.Name,
+				"cosmos.bharvest.io/pod":       pod.PodName,
+				"cosmos.bharvest.io/type":      "deep-recovery-backup",
 			},
 		},
 		Spec: snapshotv1.VolumeSnapshotSpec{
@@ -464,10 +464,10 @@ func (m *DeepRecoveryManager) createRecoveryPod(
 			Name:      recoveryPodName,
 			Namespace: crd.Namespace,
 			Labels: map[string]string{
-				"app.kubernetes.io/managed-by":   "cosmos-operator",
-				"cosmos.bharvest.io/recovery":    crd.Name,
-				"cosmos.bharvest.io/pod":         podInfo.PodName,
-				"cosmos.bharvest.io/type":        "recovery-pod",
+				"app.kubernetes.io/managed-by": "cosmos-operator",
+				"cosmos.bharvest.io/recovery":  crd.Name,
+				"cosmos.bharvest.io/pod":       podInfo.PodName,
+				"cosmos.bharvest.io/type":      "recovery-pod",
 			},
 		},
 		Spec: corev1.PodSpec{

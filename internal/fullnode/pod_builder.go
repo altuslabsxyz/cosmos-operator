@@ -473,8 +473,7 @@ func getNamadaChainInitContainer(env []corev1.EnvVar, tpl cosmosv1.PodSpec) core
 		Name:    chainInitContainer,
 		Image:   tpl.Image,
 		Command: []string{"sh"},
-		Args: []string{"-c",
-			fmt.Sprintf(`
+		Args: []string{"-c", `
 set -eu
 echo "Initializing into tmp dir for downstream processing..."
 
@@ -483,8 +482,7 @@ mkdir -p $HOME/.tmp/config
 
 cp $CHAIN_HOME/$CHAIN_ID/default-config.toml $CHAIN_HOME/$CHAIN_ID/config.toml
 cat "$CHAIN_HOME/$CHAIN_ID/config.toml" > "$HOME/.tmp/config/config.toml"
-`),
-		},
+`},
 		Env:             env,
 		ImagePullPolicy: tpl.ImagePullPolicy,
 		WorkingDir:      workDir,
