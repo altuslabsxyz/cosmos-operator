@@ -3,8 +3,9 @@ package test
 import (
 	"testing"
 
-	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
 	"github.com/stretchr/testify/require"
+
+	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
 )
 
 func HasTypeLabel(t *testing.T, builder func(crd cosmosv1.CosmosFullNode) []map[string]string) {

@@ -8,12 +8,13 @@ import (
 	"strings"
 
 	"github.com/BurntSushi/toml"
-	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
-	"github.com/b-harvest/cosmos-operator/internal/diff"
-	"github.com/b-harvest/cosmos-operator/internal/kube"
 	"github.com/peterbourgon/mergemap"
 	"github.com/samber/lo"
 	corev1 "k8s.io/api/core/v1"
+
+	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
+	"github.com/b-harvest/cosmos-operator/internal/diff"
+	"github.com/b-harvest/cosmos-operator/internal/kube"
 )
 
 const (

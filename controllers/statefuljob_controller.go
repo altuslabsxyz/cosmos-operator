@@ -22,9 +22,6 @@ import (
 	"fmt"
 	"time"
 
-	cosmosalpha "github.com/b-harvest/cosmos-operator/api/v1alpha1"
-	"github.com/b-harvest/cosmos-operator/internal/kube"
-	"github.com/b-harvest/cosmos-operator/internal/statefuljob"
 	"github.com/go-logr/logr"
 	snapshotv1 "github.com/kubernetes-csi/external-snapshotter/client/v6/apis/volumesnapshot/v1"
 	batchv1 "k8s.io/api/batch/v1"
@@ -36,6 +33,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
+
+	cosmosalpha "github.com/b-harvest/cosmos-operator/api/v1alpha1"
+	"github.com/b-harvest/cosmos-operator/internal/kube"
+	"github.com/b-harvest/cosmos-operator/internal/statefuljob"
 )
 
 var errMissingVolSnapCRD = errors.New("cluster does not have VolumeSnapshot CRDs installed")
@@ -199,7 +200,7 @@ func (r *StatefulJobReconciler) updateStatus(ctx context.Context, crd *cosmosalp
 }
 
 // SetupWithManager sets up the controller with the Manager. IndexVolumeSnapshots should be called first.
-func (r *StatefulJobReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager) error {
+func (r *StatefulJobReconciler) SetupWithManager(_ context.Context, mgr ctrl.Manager) error {
 	cbuilder := ctrl.NewControllerManagedBy(mgr).For(&cosmosalpha.StatefulJob{})
 
 	// Watch for delete events for jobs.

@@ -6,12 +6,13 @@ import (
 	"fmt"
 	"testing"
 
-	cosmosalpha "github.com/b-harvest/cosmos-operator/api/v1alpha1"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	cosmosalpha "github.com/b-harvest/cosmos-operator/api/v1alpha1"
 )
 
 func requireOwner(t *testing.T, crd metav1.Object, obj client.Object) {

@@ -10,12 +10,13 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/b-harvest/cosmos-operator/internal/cosmos"
 	"github.com/go-logr/logr"
+
+	"github.com/b-harvest/cosmos-operator/internal/cosmos"
 )
 
-// Statuser can query the Comet status endpoint.
-type Statuser interface {
+// Stature can query the Comet status endpoint.
+type Stature interface {
 	Status(ctx context.Context, rpcHost string) (cosmos.CometStatus, error)
 }
 
@@ -28,7 +29,7 @@ type healthResponse struct {
 
 // Comet checks the CometBFT status endpoint to determine if the node is in-sync or not.
 type Comet struct {
-	client      Statuser
+	client      Stature
 	lastStatus  int32
 	logger      logr.Logger
 	rpcHost     string
@@ -36,7 +37,7 @@ type Comet struct {
 	maxBlockAge time.Duration
 }
 
-func NewComet(logger logr.Logger, client Statuser, rpcHost string, timeout time.Duration, maxBlockAge time.Duration) *Comet {
+func NewComet(logger logr.Logger, client Stature, rpcHost string, timeout time.Duration, maxBlockAge time.Duration) *Comet {
 	return &Comet{
 		client:      client,
 		logger:      logger,

@@ -12,7 +12,6 @@ import (
 
 	"cosmossdk.io/log"
 	"cosmossdk.io/store/rootmulti"
-	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/spf13/cobra"
 	corev1 "k8s.io/api/core/v1"
@@ -22,6 +21,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
 )
 
 const (
@@ -42,7 +43,7 @@ func VersionCheckCmd(scheme *runtime.Scheme) *cobra.Command {
 		Use:   "versioncheck",
 		Short: "Confirm correct image used for current node height",
 		Long:  `Open the Cosmos SDK chain database, get the height, update the crd status with the height, then check the image for the height and panic if it is incorrect.`,
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(cmd *cobra.Command, _ []string) {
 			dataDir := os.Getenv("DATA_DIR")
 			backend, _ := cmd.Flags().GetString(flagBackend)
 			daemon, _ := cmd.Flags().GetBool(flagDaemon)
@@ -146,9 +147,8 @@ func checkVersion(
 			fmt.Fprintf(writer, "Failed to open db: %s. The node is likely running.\n", err)
 			// This is okay, we will read it later if the node shuts down.
 			return nil
-		} else {
-			return fmt.Errorf("failed to open db: %w", err)
 		}
+		return fmt.Errorf("failed to open db: %w", err)
 	}
 	store := rootmulti.NewStore(db, log.NewNopLogger(), nil)
 
@@ -177,10 +177,18 @@ func checkVersion(
 	currentHeight := uint64(height)
 
 	// Find the highest version where UpgradeHeight <= currentHeight + 1
-	for _, v := range crd.Spec.ChainSpec.Versions {
+	// This must match the logic in pod_builder.go findVersion() exactly
+	var selectedVersion *cosmosv1.ChainVersion
+	for i := range crd.Spec.ChainSpec.Versions {
+		v := &crd.Spec.ChainSpec.Versions[i]
 		if v.UpgradeHeight <= currentHeight+1 {
-			image = v.Image
+			if selectedVersion == nil || v.UpgradeHeight > selectedVersion.UpgradeHeight {
+				selectedVersion = v
+			}
 		}
+	}
+	if selectedVersion != nil {
+		image = selectedVersion.Image
 	}
 
 	var thisPodImage string

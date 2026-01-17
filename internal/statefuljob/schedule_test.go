@@ -4,10 +4,11 @@ import (
 	"testing"
 	"time"
 
-	cosmosalpha "github.com/b-harvest/cosmos-operator/api/v1alpha1"
 	"github.com/stretchr/testify/require"
 	batchv1 "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	cosmosalpha "github.com/b-harvest/cosmos-operator/api/v1alpha1"
 )
 
 func TestReadyForSnapshot(t *testing.T) {

@@ -4,8 +4,9 @@ import (
 	"context"
 	"sync"
 
-	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
 )
 
 type semaphore chan struct{}

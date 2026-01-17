@@ -3,11 +3,12 @@ package statefuljob
 import (
 	"testing"
 
-	cosmosalpha "github.com/b-harvest/cosmos-operator/api/v1alpha1"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	cosmosalpha "github.com/b-harvest/cosmos-operator/api/v1alpha1"
 )
 
 func TestBuildJobs(t *testing.T) {

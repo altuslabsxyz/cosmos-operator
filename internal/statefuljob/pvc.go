@@ -3,11 +3,12 @@ package statefuljob
 import (
 	"fmt"
 
-	cosmosalpha "github.com/b-harvest/cosmos-operator/api/v1alpha1"
 	snapshotv1 "github.com/kubernetes-csi/external-snapshotter/client/v6/apis/volumesnapshot/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	cosmosalpha "github.com/b-harvest/cosmos-operator/api/v1alpha1"
 )
 
 // BuildPVCs builds PVCs given the crd and VolumeSnapshot.

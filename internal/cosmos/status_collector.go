@@ -11,21 +11,21 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-// Statuser calls the RPC status endpoint.
-type Statuser interface {
+// Stature calls the RPC status endpoint.
+type Stature interface {
 	Status(ctx context.Context, rpcHost string) (CometStatus, error)
 }
 
 // StatusCollector collects the CometBFT status of all pods owned by a controller.
 type StatusCollector struct {
-	comet   Statuser
+	comet   Stature
 	timeout time.Duration
 }
 
 // NewStatusCollector returns a valid StatusCollector.
 // Timeout is exposed here because it is important for good performance in reconcile loops,
 // and reminds callers to set it.
-func NewStatusCollector(comet Statuser, timeout time.Duration) *StatusCollector {
+func NewStatusCollector(comet Stature, timeout time.Duration) *StatusCollector {
 	return &StatusCollector{comet: comet, timeout: timeout}
 }
 
@@ -37,7 +37,7 @@ func (coll StatusCollector) Collect(ctx context.Context, pods []corev1.Pod) Stat
 	statuses := make(StatusCollection, len(pods))
 
 	for i := range pods {
-		i := i
+
 		eg.Go(func() error {
 			pod := pods[i]
 			statuses[i].TS = now

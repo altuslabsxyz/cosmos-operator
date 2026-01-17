@@ -25,16 +25,17 @@ import (
 	"strings"
 	"time"
 
-	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
-	"github.com/b-harvest/cosmos-operator/internal/cosmos"
-	"github.com/b-harvest/cosmos-operator/internal/fullnode"
-	"github.com/b-harvest/cosmos-operator/internal/healthcheck"
-	"github.com/b-harvest/cosmos-operator/internal/kube"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+
+	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
+	"github.com/b-harvest/cosmos-operator/internal/cosmos"
+	"github.com/b-harvest/cosmos-operator/internal/fullnode"
+	"github.com/b-harvest/cosmos-operator/internal/healthcheck"
+	"github.com/b-harvest/cosmos-operator/internal/kube"
 )
 
 // SelfHealingReconciler reconciles the self healing portion of a CosmosFullNode object
@@ -188,7 +189,7 @@ func (r *SelfHealingReconciler) handleDeepRecovery(ctx context.Context, reporter
 }
 
 func (r *SelfHealingReconciler) detectStuckPods(ctx context.Context, crd *cosmosv1.CosmosFullNode) []fullnode.PodStuckInfo {
-	if crd.Status.Height == nil || len(crd.Status.Height) == 0 {
+	if len(crd.Status.Height) == 0 {
 		return nil
 	}
 

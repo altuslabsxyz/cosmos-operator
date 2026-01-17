@@ -6,12 +6,13 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/b-harvest/cosmos-operator/internal/cosmos"
-	"github.com/b-harvest/cosmos-operator/internal/healthcheck"
 	"github.com/go-logr/zapr"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
+
+	"github.com/b-harvest/cosmos-operator/internal/cosmos"
+	"github.com/b-harvest/cosmos-operator/internal/healthcheck"
 )
 
 func HealthCheckCmd() *cobra.Command {
@@ -35,7 +36,7 @@ func HealthCheckCmd() *cobra.Command {
 	return hc
 }
 
-func startHealthCheckServer(cmd *cobra.Command, args []string) error {
+func startHealthCheckServer(cmd *cobra.Command, _ []string) error {
 	var (
 		listenAddr  = viper.GetString("addr")
 		rpcHost     = viper.GetString("rpc-host")

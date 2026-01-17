@@ -3,11 +3,12 @@ package kube
 import (
 	"testing"
 
-	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
+
+	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
 )
 
 func TestIndexOwner(t *testing.T) {
