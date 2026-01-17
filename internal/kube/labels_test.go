@@ -7,10 +7,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/b-harvest/cosmos-operator/internal/test"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/b-harvest/cosmos-operator/internal/test"
 )
 
 func TestToLabelKey(t *testing.T) {

@@ -8,15 +8,16 @@ import (
 	"strings"
 	"sync"
 
-	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
-	"github.com/b-harvest/cosmos-operator/internal/healthcheck"
-	"github.com/b-harvest/cosmos-operator/internal/kube"
-	"github.com/b-harvest/cosmos-operator/internal/version"
 	"github.com/samber/lo"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+
+	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
+	"github.com/b-harvest/cosmos-operator/internal/healthcheck"
+	"github.com/b-harvest/cosmos-operator/internal/kube"
+	"github.com/b-harvest/cosmos-operator/internal/version"
 )
 
 var bufPool = sync.Pool{New: func() any { return new(bytes.Buffer) }}
@@ -301,7 +302,7 @@ const (
 	volNodeKey   = "vol-node-key"   // Secret containing the node key.
 )
 
-func getCometbftDir(crd *cosmosv1.CosmosFullNode) string {
+func getCometbftDir(_ *cosmosv1.CosmosFullNode) string {
 	// Default to Cosmos behavior (no subdirectory)
 	return ""
 }

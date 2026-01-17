@@ -3,12 +3,13 @@ package fullnode
 import (
 	"fmt"
 
-	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
-	"github.com/b-harvest/cosmos-operator/internal/diff"
-	"github.com/b-harvest/cosmos-operator/internal/kube"
 	"github.com/samber/lo"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+
+	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
+	"github.com/b-harvest/cosmos-operator/internal/diff"
+	"github.com/b-harvest/cosmos-operator/internal/kube"
 )
 
 const maxP2PServiceDefault = int32(1)
@@ -25,11 +26,11 @@ const maxP2PServiceDefault = int32(1)
 // interpreted as byzantine behavior if the peer previously connected to a pod that was in sync through the same
 // external address.
 func BuildServices(crd *cosmosv1.CosmosFullNode) []diff.Resource[*corev1.Service] {
-	max := maxP2PServiceDefault
+	maxP2P := maxP2PServiceDefault
 	if v := crd.Spec.Service.MaxP2PExternalAddresses; v != nil {
-		max = *v
+		maxP2P = *v
 	}
-	maxExternal := lo.Clamp(max, 0, crd.Spec.Replicas)
+	maxExternal := lo.Clamp(maxP2P, 0, crd.Spec.Replicas)
 	svcs := make([]diff.Resource[*corev1.Service], func(nodeType cosmosv1.FullNodeType) int32 {
 		if nodeType == cosmosv1.Sentry {
 			return crd.Spec.Replicas * 2

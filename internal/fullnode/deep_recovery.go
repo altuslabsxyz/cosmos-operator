@@ -21,12 +21,13 @@ import (
 	"fmt"
 	"time"
 
-	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
 	snapshotv1 "github.com/kubernetes-csi/external-snapshotter/client/v6/apis/volumesnapshot/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
 )
 
 const (
@@ -138,8 +139,8 @@ func (m *DeepRecoveryManager) getOrCreateStatus(crd *cosmosv1.CosmosFullNode, po
 }
 
 func (m *DeepRecoveryManager) handleIdlePhase(
-	ctx context.Context,
-	crd *cosmosv1.CosmosFullNode,
+	_ context.Context,
+	_ *cosmosv1.CosmosFullNode,
 	pod PodStuckInfo,
 	status *cosmosv1.DeepRecoveryStatus,
 	now metav1.Time,
@@ -215,7 +216,7 @@ func (m *DeepRecoveryManager) handleDetectedPhase(
 func (m *DeepRecoveryManager) handleSnapshotCreatingPhase(
 	ctx context.Context,
 	crd *cosmosv1.CosmosFullNode,
-	pod PodStuckInfo,
+	_ PodStuckInfo,
 	status *cosmosv1.DeepRecoveryStatus,
 ) (bool, error) {
 	if status.SnapshotName == "" {
@@ -293,8 +294,8 @@ func (m *DeepRecoveryManager) handleRecoveryPhase(
 }
 
 func (m *DeepRecoveryManager) handleCompletedPhase(
-	ctx context.Context,
-	crd *cosmosv1.CosmosFullNode,
+	_ context.Context,
+	_ *cosmosv1.CosmosFullNode,
 	pod PodStuckInfo,
 	status *cosmosv1.DeepRecoveryStatus,
 ) (bool, error) {
@@ -317,9 +318,9 @@ func (m *DeepRecoveryManager) handleCompletedPhase(
 }
 
 func (m *DeepRecoveryManager) handleFailedPhase(
-	ctx context.Context,
-	crd *cosmosv1.CosmosFullNode,
-	pod PodStuckInfo,
+	_ context.Context,
+	_ *cosmosv1.CosmosFullNode,
+	_ PodStuckInfo,
 	status *cosmosv1.DeepRecoveryStatus,
 	spec *cosmosv1.DeepRecoverySpec,
 ) (bool, error) {
@@ -336,9 +337,9 @@ func (m *DeepRecoveryManager) handleFailedPhase(
 }
 
 func (m *DeepRecoveryManager) handleRateLimitedPhase(
-	ctx context.Context,
-	crd *cosmosv1.CosmosFullNode,
-	pod PodStuckInfo,
+	_ context.Context,
+	_ *cosmosv1.CosmosFullNode,
+	_ PodStuckInfo,
 	status *cosmosv1.DeepRecoveryStatus,
 	spec *cosmosv1.DeepRecoverySpec,
 ) (bool, error) {

@@ -19,35 +19,32 @@ package main
 import (
 	"fmt"
 	"net/http"
+	// Add Pprof endpoints.
+	_ "net/http/pprof"
 	"os"
 	"time"
 
+	"github.com/go-logr/zapr"
+	snapshotv1 "github.com/kubernetes-csi/external-snapshotter/client/v6/apis/volumesnapshot/v1"
+	"github.com/pkg/profile"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	"k8s.io/apimachinery/pkg/runtime"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
+	// to ensure that exec-entrypoint and run can make use of them.
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/healthz"
+
+	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
+	cosmosv1alpha1 "github.com/b-harvest/cosmos-operator/api/v1alpha1"
 	opcmd "github.com/b-harvest/cosmos-operator/cmd"
 	"github.com/b-harvest/cosmos-operator/controllers"
 	"github.com/b-harvest/cosmos-operator/internal/cosmos"
 	"github.com/b-harvest/cosmos-operator/internal/fullnode"
 	"github.com/b-harvest/cosmos-operator/internal/version"
-	"github.com/go-logr/zapr"
-	"github.com/pkg/profile"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
-	"sigs.k8s.io/controller-runtime/pkg/healthz"
-
-	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
-	// to ensure that exec-entrypoint and run can make use of them.
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
-
-	// Add Pprof endpoints.
-	_ "net/http/pprof"
-
-	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
-	cosmosv1alpha1 "github.com/b-harvest/cosmos-operator/api/v1alpha1"
-	snapshotv1 "github.com/kubernetes-csi/external-snapshotter/client/v6/apis/volumesnapshot/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
-	ctrl "sigs.k8s.io/controller-runtime"
-	//+kubebuilder:scaffold:imports
 )
 
 var (
@@ -112,7 +109,7 @@ func rootCmd() *cobra.Command {
 	root.AddCommand(&cobra.Command{
 		Short: "Print the version",
 		Use:   "version",
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			fmt.Println("App Version:", version.AppVersion())
 			fmt.Println("Docker Tag:", version.DockerTag())
 		},
@@ -121,7 +118,7 @@ func rootCmd() *cobra.Command {
 	return root
 }
 
-func startManager(cmd *cobra.Command, args []string) error {
+func startManager(cmd *cobra.Command, _ []string) error {
 	go func() {
 		setupLog.Info("Serving pprof endpoints at localhost:6060/debug/pprof")
 		if err := http.ListenAndServe("localhost:6060", nil); err != nil {

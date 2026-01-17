@@ -1,9 +1,10 @@
 package kube
 
 import (
-	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
 )
 
 // IndexOwner returns field values for indexing "child" resources that are "owned" by a controller

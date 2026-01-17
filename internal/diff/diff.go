@@ -5,8 +5,9 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/b-harvest/cosmos-operator/internal/kube"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/b-harvest/cosmos-operator/internal/kube"
 )
 
 const revisionLabel = "app.kubernetes.io/revision"

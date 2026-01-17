@@ -1,10 +1,11 @@
 package fullnode
 
 import (
-	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
-	"github.com/b-harvest/cosmos-operator/internal/diff"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
+	"github.com/b-harvest/cosmos-operator/internal/diff"
 )
 
 const (

@@ -4,15 +4,16 @@ import (
 	"strings"
 	"testing"
 
-	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
-	"github.com/b-harvest/cosmos-operator/internal/kube"
-	"github.com/b-harvest/cosmos-operator/internal/test"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+
+	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
+	"github.com/b-harvest/cosmos-operator/internal/kube"
+	"github.com/b-harvest/cosmos-operator/internal/test"
 )
 
 func defaultCRD() cosmosv1.CosmosFullNode {

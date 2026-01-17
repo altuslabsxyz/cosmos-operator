@@ -5,16 +5,17 @@ import (
 	"errors"
 	"testing"
 
-	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
-	"github.com/b-harvest/cosmos-operator/internal/diff"
-	"github.com/b-harvest/cosmos-operator/internal/kube"
-	"github.com/b-harvest/cosmos-operator/internal/test"
 	snapshotv1 "github.com/kubernetes-csi/external-snapshotter/client/v6/apis/volumesnapshot/v1"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
+	"github.com/b-harvest/cosmos-operator/internal/diff"
+	"github.com/b-harvest/cosmos-operator/internal/kube"
+	"github.com/b-harvest/cosmos-operator/internal/test"
 )
 
 var nopReporter test.NopReporter

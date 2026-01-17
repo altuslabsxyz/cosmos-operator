@@ -4,9 +4,10 @@ import (
 	"testing"
 	"time"
 
-	cosmosalpha "github.com/b-harvest/cosmos-operator/api/v1alpha1"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	cosmosalpha "github.com/b-harvest/cosmos-operator/api/v1alpha1"
 )
 
 func TestResetStatus(t *testing.T) {

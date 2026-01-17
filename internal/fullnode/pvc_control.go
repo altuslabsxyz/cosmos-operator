@@ -4,9 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
-	"github.com/b-harvest/cosmos-operator/internal/diff"
-	"github.com/b-harvest/cosmos-operator/internal/kube"
 	snapshotv1 "github.com/kubernetes-csi/external-snapshotter/client/v6/apis/volumesnapshot/v1"
 	"github.com/samber/lo"
 	corev1 "k8s.io/api/core/v1"
@@ -14,6 +11,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
+	"github.com/b-harvest/cosmos-operator/internal/diff"
+	"github.com/b-harvest/cosmos-operator/internal/kube"
 )
 
 // PVCControl reconciles volumes for a CosmosFullNode.
@@ -260,12 +261,11 @@ func (control PVCControl) findDataSourceWithPvcSpec(
 				ref:  ds,
 				size: pvc.Status.Capacity["storage"],
 			}
-		} else {
-			err := fmt.Errorf("unsupported DataSource %s", ds.Kind)
-			reporter.Error(err, "Unsupported DataSource")
-			reporter.RecordError("DataSourceUnsupported", err)
-			return nil
 		}
+		err := fmt.Errorf("unsupported DataSource %s", ds.Kind)
+		reporter.Error(err, "Unsupported DataSource")
+		reporter.RecordError("DataSourceUnsupported", err)
+		return nil
 	}
 	spec := pvcSpec.AutoDataSource
 	if spec == nil {

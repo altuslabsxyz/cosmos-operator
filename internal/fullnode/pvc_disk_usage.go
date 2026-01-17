@@ -8,14 +8,15 @@ import (
 	"strings"
 	"time"
 
-	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
-	"github.com/b-harvest/cosmos-operator/internal/healthcheck"
-	"github.com/b-harvest/cosmos-operator/internal/kube"
 	"github.com/samber/lo"
 	"golang.org/x/sync/errgroup"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
+	"github.com/b-harvest/cosmos-operator/internal/healthcheck"
+	"github.com/b-harvest/cosmos-operator/internal/kube"
 )
 
 // DiskUsager fetches disk usage statistics
@@ -62,7 +63,7 @@ func (c DiskUsageCollector) CollectDiskUsage(ctx context.Context, crd *cosmosv1.
 	)
 
 	for i := range pods.Items {
-		i := i
+
 		eg.Go(func() error {
 			pod := pods.Items[i]
 

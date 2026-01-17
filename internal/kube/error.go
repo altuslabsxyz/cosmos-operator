@@ -66,7 +66,7 @@ type ReconcileErrors struct {
 }
 
 func (errs *ReconcileErrors) Error() string {
-	all := lo.Map(errs.errs, func(err ReconcileError, i int) string { return err.Error() })
+	all := lo.Map(errs.errs, func(err ReconcileError, _ int) string { return err.Error() })
 	return strings.Join(all, "; ")
 }
 

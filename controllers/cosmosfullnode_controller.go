@@ -21,10 +21,6 @@ import (
 	"fmt"
 	"time"
 
-	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
-	"github.com/b-harvest/cosmos-operator/internal/cosmos"
-	"github.com/b-harvest/cosmos-operator/internal/fullnode"
-	"github.com/b-harvest/cosmos-operator/internal/kube"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -35,6 +31,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/source"
+
+	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
+	"github.com/b-harvest/cosmos-operator/internal/cosmos"
+	"github.com/b-harvest/cosmos-operator/internal/fullnode"
+	"github.com/b-harvest/cosmos-operator/internal/kube"
 )
 
 const controllerOwnerField = ".metadata.controller"

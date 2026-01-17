@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
@@ -17,6 +16,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
 )
 
 type mockCollector struct {

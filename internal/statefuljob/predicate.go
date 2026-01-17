@@ -9,7 +9,7 @@ import (
 // DeletePredicate watches all delete events.
 func DeletePredicate() predicate.Predicate {
 	return &predicate.Funcs{
-		DeleteFunc: func(ev event.DeleteEvent) bool {
+		DeleteFunc: func(_ event.DeleteEvent) bool {
 			return true
 		},
 	}

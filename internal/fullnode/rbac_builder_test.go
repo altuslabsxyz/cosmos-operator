@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-
 	rbacv1 "k8s.io/api/rbac/v1"
 )
 

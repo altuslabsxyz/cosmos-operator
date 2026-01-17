@@ -6,11 +6,12 @@ import (
 	"math"
 	"time"
 
-	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
 )
 
 type StatusSyncer interface {
@@ -74,15 +75,15 @@ func (scaler PVCAutoScaler) SignalPVCResize(ctx context.Context, crd *cosmosv1.C
 			}
 		}
 
-		if max := spec.MaxSize; !max.IsZero() {
-			if pvc.Capacity.Cmp(max) >= 0 {
+		if maxSize := spec.MaxSize; !maxSize.IsZero() {
+			if pvc.Capacity.Cmp(maxSize) >= 0 {
 				// already at max size
 				continue
 			}
 
-			if newSize.Cmp(max) >= 0 {
+			if newSize.Cmp(maxSize) >= 0 {
 				// Cap new size to the max size
-				newSize = max
+				newSize = maxSize
 			}
 		}
 

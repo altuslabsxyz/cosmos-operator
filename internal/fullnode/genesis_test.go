@@ -3,8 +3,9 @@ package fullnode
 import (
 	"testing"
 
-	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
 	"github.com/stretchr/testify/require"
+
+	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
 )
 
 func TestDownloadGenesisCommand(t *testing.T) {
