@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	snapshotv1 "github.com/kubernetes-csi/external-snapshotter/client/v6/apis/volumesnapshot/v1"
-	"github.com/samber/lo"
 	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
 	"github.com/b-harvest/cosmos-operator/internal/diff"
 	"github.com/b-harvest/cosmos-operator/internal/kube"
+	snapshotv1 "github.com/kubernetes-csi/external-snapshotter/client/v6/apis/volumesnapshot/v1"
+	"github.com/samber/lo"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -50,25 +50,32 @@ func (control PVCControl) Reconcile(ctx context.Context, reporter kube.Reporter,
 	var currentPVCs = ptrSlice(vols.Items)
 
 	dataSources := make(map[int32]*dataSource)
-	if len(currentPVCs) < int(crd.Spec.Replicas) {
-		for i := int32(0); i < crd.Spec.Replicas; i++ {
-			name := pvcName(crd, i)
-			found := false
-			for _, pvc := range currentPVCs {
-				if pvc.Name == name {
-					found = true
-					break
+	for i := int32(0); i < crd.Spec.Replicas; i++ {
+		name := pvcName(crd, i)
+		var existingPVC *corev1.PersistentVolumeClaim
+		for _, pvc := range currentPVCs {
+			if pvc.Name == name {
+				existingPVC = pvc
+				break
+			}
+		}
+
+		// Check if instanceOverrides specifies a different dataSource
+		if existingPVC != nil {
+			desiredDS := control.findDataSource(ctx, reporter, crd, i)
+			if desiredDS != nil && !dataSourceEqual(existingPVC.Spec.DataSource, desiredDS.ref) {
+				// dataSource changed via instanceOverrides, need to recreate PVC
+				dataSources[i] = desiredDS
+			}
+		} else {
+			// New PVC needs to be created
+			ds := control.findDataSource(ctx, reporter, crd, i)
+			if ds == nil {
+				ds = &dataSource{
+					size: crd.Spec.VolumeClaimTemplate.Resources.Requests[corev1.ResourceStorage],
 				}
 			}
-			if !found {
-				ds := control.findDataSource(ctx, reporter, crd, i)
-				if ds == nil {
-					ds = &dataSource{
-						size: crd.Spec.VolumeClaimTemplate.Resources.Requests[corev1.ResourceStorage],
-					}
-				}
-				dataSources[i] = ds
-			}
+			dataSources[i] = ds
 		}
 	}
 
@@ -96,7 +103,41 @@ func (control PVCControl) Reconcile(ctx context.Context, reporter kube.Reporter,
 
 	var deletes int
 	if !control.shouldRetain(crd) {
+		// Check if any pods are using PVCs before deletion
+		var pods corev1.PodList
+		if err := control.client.List(ctx, &pods,
+			client.InNamespace(crd.Namespace),
+			client.MatchingFields{kube.ControllerOwnerField: crd.Name},
+		); err != nil {
+			return false, kube.TransientError(fmt.Errorf("list existing pods: %w", err))
+		}
+
 		for _, pvc := range diffed.Deletes() {
+			// Check if any pod is using this PVC
+			pvcInUse := false
+			for _, pod := range pods.Items {
+				if pod.DeletionTimestamp != nil {
+					// Pod is being deleted, wait for it
+					pvcInUse = true
+					break
+				}
+				for _, vol := range pod.Spec.Volumes {
+					if vol.PersistentVolumeClaim != nil && vol.PersistentVolumeClaim.ClaimName == pvc.Name {
+						pvcInUse = true
+						break
+					}
+				}
+				if pvcInUse {
+					break
+				}
+			}
+
+			if pvcInUse {
+				reporter.Info("PVC in use by pod, waiting for pod deletion", "name", pvc.Name)
+				// Requeue to wait for pod deletion
+				return true, nil
+			}
+
 			reporter.Info("Deleting pvc", "name", pvc.Name)
 			if err := control.client.Delete(ctx, pvc, client.PropagationPolicy(metav1.DeletePropagationForeground)); client.IgnoreNotFound(err) != nil {
 				return true, kube.TransientError(fmt.Errorf("delete pvc %q: %w", pvc.Name, err))
@@ -167,6 +208,26 @@ func (control PVCControl) findDataSource(ctx context.Context, reporter kube.Repo
 	}
 
 	return control.findDataSourceWithPvcSpec(ctx, reporter, crd, crd.Spec.VolumeClaimTemplate, ordinal)
+}
+
+func dataSourceEqual(a, b *corev1.TypedLocalObjectReference) bool {
+	if a == nil && b == nil {
+		return true
+	}
+	if a == nil || b == nil {
+		return false
+	}
+	if a.Kind != b.Kind || a.Name != b.Name {
+		return false
+	}
+	// Compare APIGroup, handling nil pointers
+	if (a.APIGroup == nil) != (b.APIGroup == nil) {
+		return false
+	}
+	if a.APIGroup != nil && b.APIGroup != nil && *a.APIGroup != *b.APIGroup {
+		return false
+	}
+	return true
 }
 
 func (control PVCControl) findDataSourceWithPvcSpec(

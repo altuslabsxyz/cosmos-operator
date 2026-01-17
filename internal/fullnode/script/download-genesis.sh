@@ -4,6 +4,10 @@ set -eu
 
 GENESIS_URL="$1"
 
+# Ensure the config directory exists
+echo "Ensuring config directory exists: $CONFIG_DIR"
+mkdir -p "$CONFIG_DIR"
+
 echo "Downloading genesis file $GENESIS_URL to $GENESIS_FILE..."
 
 download_json() {
@@ -28,10 +32,10 @@ download_targz() {
 
 download_zip() {
   echo "Downloading and extracting zip..."
-  wget -c -O tmp_genesis.zip "$GENESIS_URL"
-  unzip tmp_genesis.zip
-  rm tmp_genesis.zip
-  mv genesis.json "$GENESIS_FILE"
+  wget -c -O /tmp/tmp_genesis.zip "$GENESIS_URL"
+  unzip -o /tmp/tmp_genesis.zip -d /tmp
+  rm /tmp/tmp_genesis.zip
+  mv /tmp/genesis.json "$GENESIS_FILE"
 }
 
 rm -f "$GENESIS_FILE"

@@ -23,6 +23,8 @@ spec:
       labels:
         control-plane: controller-manager
     spec:
+      imagePullSecrets:
+      - name: ghcr-secret
       securityContext:
         runAsNonRoot: true
         seccompProfile:

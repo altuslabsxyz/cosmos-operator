@@ -12,9 +12,9 @@ import (
 
 	"cosmossdk.io/log"
 	"cosmossdk.io/store/rootmulti"
+	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/spf13/cobra"
-	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -152,7 +152,7 @@ func checkVersion(
 	}
 	store := rootmulti.NewStore(db, log.NewNopLogger(), nil)
 
-	height := store.LatestVersion() + 1
+	height := store.LatestVersion()
 	db.Close()
 
 	if crd == nil {
@@ -166,12 +166,21 @@ func checkVersion(
 		return err
 	}
 
-	var image string
+	// Find the expected image based on current height
+	// Uses the same logic as pod_builder.go findVersion() to ensure consistency
+	//
+	// In Cosmos SDK, when an upgrade is scheduled at height N, the upgrade handler runs
+	// in the BeginBlock/PreBlocker of block N. The database records height N-1 as the
+	// last committed block before the upgrade. Therefore, when DB shows height N-1,
+	// we need to use the new image that will handle the upgrade at height N.
+	image := crd.Spec.PodTemplate.Image
+	currentHeight := uint64(height)
+
+	// Find the highest version where UpgradeHeight <= currentHeight + 1
 	for _, v := range crd.Spec.ChainSpec.Versions {
-		if uint64(height) < v.UpgradeHeight {
-			break
+		if v.UpgradeHeight <= currentHeight+1 {
+			image = v.Image
 		}
-		image = v.Image
 	}
 
 	var thisPodImage string

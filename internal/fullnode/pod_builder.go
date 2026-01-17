@@ -68,14 +68,17 @@ func NewPodBuilder(crd *cosmosv1.CosmosFullNode) PodBuilder {
 			Annotations: make(map[string]string),
 		},
 		Spec: corev1.PodSpec{
-			ServiceAccountName: serviceAccountName(crd),
+			ServiceAccountName:    serviceAccountName(crd),
+			ShareProcessNamespace: ptr(false),
 			SecurityContext: &corev1.PodSecurityContext{
 				RunAsUser:           ptr(int64(1025)),
 				RunAsGroup:          ptr(int64(1025)),
-				RunAsNonRoot:        ptr(true),
 				FSGroup:             ptr(int64(1025)),
 				FSGroupChangePolicy: ptr(corev1.FSGroupChangeOnRootMismatch),
-				SeccompProfile:      &corev1.SeccompProfile{Type: corev1.SeccompProfileTypeRuntimeDefault},
+				RunAsNonRoot:        ptr(true),
+				SeccompProfile: &corev1.SeccompProfile{
+					Type: corev1.SeccompProfileTypeRuntimeDefault,
+				},
 			},
 			Subdomain: crd.Name,
 			Containers: []corev1.Container{
@@ -94,6 +97,14 @@ func NewPodBuilder(crd *cosmosv1.CosmosFullNode) PodBuilder {
 					ReadinessProbe:  probes[0],
 					ImagePullPolicy: tpl.ImagePullPolicy,
 					WorkingDir:      workDir,
+					SecurityContext: &corev1.SecurityContext{
+						RunAsUser:    ptr(int64(1025)),
+						RunAsGroup:   ptr(int64(1025)),
+						RunAsNonRoot: ptr(true),
+						Capabilities: &corev1.Capabilities{
+							Add: []corev1.Capability{"SYS_PTRACE"},
+						},
+					},
 				},
 				// healthcheck sidecar
 				{
@@ -102,6 +113,7 @@ func NewPodBuilder(crd *cosmosv1.CosmosFullNode) PodBuilder {
 					// IMPORTANT: Must use v0.6.2 or later.
 					Image:   "ghcr.io/b-harvest/cosmos-operator:" + version.DockerTag(),
 					Command: []string{"/manager", "healthcheck"},
+					Args:    healthCheckArgs(crd),
 					Ports:   []corev1.ContainerPort{{ContainerPort: healthCheckPort, Protocol: corev1.ProtocolTCP}},
 					Resources: corev1.ResourceRequirements{
 						Requests: corev1.ResourceList{
@@ -111,6 +123,14 @@ func NewPodBuilder(crd *cosmosv1.CosmosFullNode) PodBuilder {
 					},
 					ReadinessProbe:  probes[1],
 					ImagePullPolicy: tpl.ImagePullPolicy,
+					SecurityContext: &corev1.SecurityContext{
+						RunAsUser:    ptr(int64(1025)),
+						RunAsGroup:   ptr(int64(1025)),
+						RunAsNonRoot: ptr(true),
+						Capabilities: &corev1.Capabilities{
+							Add: []corev1.Capability{"SYS_PTRACE"},
+						},
+					},
 				},
 			},
 		},
@@ -131,7 +151,14 @@ func NewPodBuilder(crd *cosmosv1.CosmosFullNode) PodBuilder {
 			Env:             envVars(crd),
 			ImagePullPolicy: tpl.ImagePullPolicy,
 			WorkingDir:      workDir,
-			SecurityContext: &corev1.SecurityContext{},
+			SecurityContext: &corev1.SecurityContext{
+				RunAsUser:    ptr(int64(1025)),
+				RunAsGroup:   ptr(int64(1025)),
+				RunAsNonRoot: ptr(true),
+				Capabilities: &corev1.Capabilities{
+					Add: []corev1.Capability{"SYS_PTRACE"},
+				},
+			},
 		})
 	}
 
@@ -149,6 +176,7 @@ func podReadinessProbes(crd *cosmosv1.CosmosFullNode) []*corev1.Probe {
 		return []*corev1.Probe{nil, nil}
 	}
 
+	// Default main probe for Cosmos RPC port
 	mainProbe := &corev1.Probe{
 		ProbeHandler: corev1.ProbeHandler{
 			HTTPGet: &corev1.HTTPGetAction{
@@ -162,6 +190,12 @@ func podReadinessProbes(crd *cosmosv1.CosmosFullNode) []*corev1.Probe {
 		PeriodSeconds:       10,
 		SuccessThreshold:    1,
 		FailureThreshold:    5,
+	}
+
+	// Use custom readiness probe if specified with Custom strategy
+	if crd.Spec.PodTemplate.Probes.Strategy == cosmosv1.FullNodeProbeStrategyCustom &&
+		crd.Spec.PodTemplate.Probes.ReadinessProbe != nil {
+		mainProbe = crd.Spec.PodTemplate.Probes.ReadinessProbe.DeepCopy()
 	}
 
 	sidecarProbe := &corev1.Probe{
@@ -182,11 +216,78 @@ func podReadinessProbes(crd *cosmosv1.CosmosFullNode) []*corev1.Probe {
 	return []*corev1.Probe{mainProbe, sidecarProbe}
 }
 
+// healthCheckArgs returns the arguments for the healthcheck sidecar container.
+func healthCheckArgs(crd *cosmosv1.CosmosFullNode) []string {
+	var args []string
+	if crd.Spec.PodTemplate.Probes.MaxBlockAgeSecs != nil && *crd.Spec.PodTemplate.Probes.MaxBlockAgeSecs > 0 {
+		args = append(args, fmt.Sprintf("--max-block-age=%ds", *crd.Spec.PodTemplate.Probes.MaxBlockAgeSecs))
+	}
+	return args
+}
+
+// findVersion returns the appropriate ChainVersion based on the current height.
+// It finds the version with the highest UpgradeHeight where UpgradeHeight <= currentHeight + 1.
+//
+// In Cosmos SDK, when an upgrade is scheduled at height N, the upgrade handler runs
+// in the BeginBlock/PreBlocker of block N. The database records height N-1 as the
+// last committed block before the upgrade. Therefore, when DB shows height N-1,
+// we need to use the new image that will handle the upgrade at height N.
+//
+// Example: UpgradeHeight=300 means the upgrade runs at block 300's BeginBlock.
+// When DB height is 299, we need to switch to the new image.
+// Condition: UpgradeHeight <= currentHeight + 1 → 300 <= 299 + 1 = 300 ✓
+func findVersion(versions []cosmosv1.ChainVersion, currentHeight uint64) *cosmosv1.ChainVersion {
+	var selected *cosmosv1.ChainVersion
+	for i := range versions {
+		v := &versions[i]
+		if v.UpgradeHeight <= currentHeight+1 {
+			if selected == nil || v.UpgradeHeight > selected.UpgradeHeight {
+				selected = v
+			}
+		}
+	}
+
+	return selected
+}
+
 // Build assigns the CosmosFullNode crd as the owner and returns a fully constructed pod.
 func (b PodBuilder) Build() (*corev1.Pod, error) {
 	pod := b.pod.DeepCopy()
+
+	// Check if pod is disabled via InstanceOverrides
+	if pod.Name != "" {
+		if override, ok := b.crd.Spec.InstanceOverrides[pod.Name]; ok {
+			if override.DisableStrategy != nil && (*override.DisableStrategy == cosmosv1.DisablePod || *override.DisableStrategy == cosmosv1.DisableAll) {
+				return nil, nil
+			}
+		}
+	}
+
 	if err := kube.ApplyStrategicMergePatch(pod, podPatch(b.crd)); err != nil {
 		return nil, err
+	}
+
+	// Apply version-specific images based on pod height (after merge patch)
+	if pod.Name != "" && len(b.crd.Spec.ChainSpec.Versions) > 0 {
+		if currentHeight, ok := b.crd.Status.Height[pod.Name]; ok {
+			if version := findVersion(b.crd.Spec.ChainSpec.Versions, currentHeight); version != nil {
+				setChainContainerImages(pod, version)
+			}
+		}
+	}
+
+	// Apply image override if specified (must be after version logic)
+	if pod.Name != "" {
+		if override, ok := b.crd.Spec.InstanceOverrides[pod.Name]; ok {
+			if override.Image != "" {
+				for i := range pod.Spec.Containers {
+					if pod.Spec.Containers[i].Name == mainContainer {
+						pod.Spec.Containers[i].Image = override.Image
+						break
+					}
+				}
+			}
+		}
 	}
 	kube.NormalizeMetadata(&pod.ObjectMeta)
 	return pod, nil
@@ -299,7 +400,7 @@ const (
 	workDir        = "/home/operator"
 	tmpDir         = workDir + "/.tmp"
 	tmpConfigDir   = workDir + "/.config"
-	infraToolImage = "ghcr.io/bharvest-devops/infratoolkit:v0.1.0"
+	infraToolImage = "ghcr.io/qj0r9j0vc2/infra-toolkit:latest"
 
 	// Necessary for statesync
 	systemTmpDir = "/tmp"
@@ -318,6 +419,7 @@ func envVars(crd *cosmosv1.CosmosFullNode) []corev1.EnvVar {
 	home := ChainHomeDir(crd)
 	envs := []corev1.EnvVar{
 		{Name: "HOME", Value: workDir},
+		{Name: "WORK_DIR", Value: workDir},
 		{Name: "CHAIN_HOME", Value: home},
 		{Name: "GENESIS_FILE", Value: path.Join(home, getCometbftDir(crd)+"/config", "genesis.json")},
 		{Name: "ADDRBOOK_FILE", Value: path.Join(home, getCometbftDir(crd)+"/config", "addrbook.json")},
@@ -334,7 +436,7 @@ func getCleanInitContainer(env []corev1.EnvVar, tpl cosmosv1.PodSpec) corev1.Con
 		Name:            "clean-init",
 		Image:           infraToolImage,
 		Command:         []string{"sh"},
-		Args:            []string{"-c", `if [ -d $HOME/.tmp/ ]; then rm -rf "$HOME/.tmp/*"; fi`},
+		Args:            []string{"-c", `if [ -d $WORK_DIR/.tmp/ ]; then rm -rf "$WORK_DIR/.tmp/*"; fi`},
 		Env:             env,
 		ImagePullPolicy: tpl.ImagePullPolicy,
 		WorkingDir:      workDir,
@@ -356,7 +458,7 @@ else
 	echo "Skipping chain init; already initialized."
 fi
 echo "Initializing into tmp dir for downstream processing..."
-%s --home "$HOME/.tmp" || true
+HOME="$WORK_DIR/.tmp" %s --home "$WORK_DIR/.tmp" || true
 `, initCmd, initCmd),
 		},
 		Env:             env,
@@ -365,6 +467,7 @@ echo "Initializing into tmp dir for downstream processing..."
 	}
 }
 
+//nolint:unused // Reserved for future Namada support
 func getNamadaChainInitContainer(env []corev1.EnvVar, tpl cosmosv1.PodSpec) corev1.Container {
 	return corev1.Container{
 		Name:    chainInitContainer,
@@ -420,8 +523,8 @@ func getConfigMergeContainer(env []corev1.EnvVar, tpl cosmosv1.PodSpec) corev1.C
 		Args: []string{"-c",
 			`
 set -eu
-TMP_DIR="$HOME/.tmp/config"
-OVERLAY_DIR="$HOME/.config"
+TMP_DIR="$WORK_DIR/.tmp/config"
+OVERLAY_DIR="$WORK_DIR/.config"
 
 # This is a hack to prevent adding another init container.
 # Ideally, this step is not concerned with merging config, so it would live elsewhere.
@@ -474,14 +577,13 @@ func initContainers(crd *cosmosv1.CosmosFullNode, moniker string) []corev1.Conta
 		})
 	}
 	allowPrivilege := false
-	for _, c := range required {
-		c.SecurityContext = &corev1.SecurityContext{
+	for i := range required {
+		required[i].SecurityContext = &corev1.SecurityContext{
 			RunAsUser:                ptr(int64(1025)),
 			RunAsGroup:               ptr(int64(1025)),
 			RunAsNonRoot:             ptr(true),
 			AllowPrivilegeEscalation: &allowPrivilege,
 			Privileged:               &allowPrivilege,
-			SeccompProfile:           &corev1.SeccompProfile{Type: corev1.SeccompProfileTypeRuntimeDefault},
 		}
 	}
 
@@ -520,7 +622,13 @@ func initContainers(crd *cosmosv1.CosmosFullNode, moniker string) []corev1.Conta
 		Env:             env,
 		ImagePullPolicy: tpl.ImagePullPolicy,
 		WorkingDir:      workDir,
-		SecurityContext: &corev1.SecurityContext{},
+		SecurityContext: &corev1.SecurityContext{
+			RunAsUser:                ptr(int64(1025)),
+			RunAsGroup:               ptr(int64(1025)),
+			RunAsNonRoot:             ptr(true),
+			AllowPrivilegeEscalation: &allowPrivilege,
+			Privileged:               &allowPrivilege,
+		},
 	})
 
 	return required
@@ -537,13 +645,16 @@ func startCmdAndArgs(crd *cosmosv1.CosmosFullNode) (string, []string) {
 		privvalSleep = *v
 	}
 
+	// Use shell wrapper to set HOME to CHAIN_HOME to prevent chain binary
+	// from attempting to create directories in the default HOME location
+	var shellBody string
 	if crd.Spec.Type == cosmosv1.Sentry && privvalSleep > 0 {
-		shellBody := fmt.Sprintf(`sleep %d
-%s %s`, privvalSleep, binary, strings.Join(args, " "))
-		return "sh", []string{"-c", shellBody}
+		shellBody = fmt.Sprintf(`sleep %d
+HOME="$CHAIN_HOME" %s %s`, privvalSleep, binary, strings.Join(args, " "))
+	} else {
+		shellBody = fmt.Sprintf(`HOME="$CHAIN_HOME" %s %s`, binary, strings.Join(args, " "))
 	}
-
-	return binary, args
+	return "sh", []string{"-c", shellBody}
 }
 
 func startCommandArgs(crd *cosmosv1.CosmosFullNode) []string {
@@ -599,7 +710,7 @@ func PVCName(pod *corev1.Pod) string {
 	return found.PersistentVolumeClaim.ClaimName
 }
 
-const PRUNING_POD_IMAGE_DEFAULT = "ghcr.io/bharvest-devops/cosmos-pruner:latest"
+const pruningPodImageDefault = "ghcr.io/bharvest-devops/cosmos-pruner:latest"
 
 func (p *PrunerPod) BuildPruningContainer(crd *cosmosv1.CosmosFullNode) *corev1.Pod {
 	if p == nil {
@@ -615,7 +726,7 @@ func (p *PrunerPod) BuildPruningContainer(crd *cosmosv1.CosmosFullNode) *corev1.
 		probes         = podReadinessProbes(crd)
 	)
 	if pruningImage == "" {
-		pruningImage = PRUNING_POD_IMAGE_DEFAULT
+		pruningImage = pruningPodImageDefault
 	}
 	if pruningCommand == "" {
 		pruningCommand = "cosmos-pruner compact /home/operator/cosmos/data/ 2>&1"

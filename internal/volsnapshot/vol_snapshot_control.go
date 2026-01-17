@@ -7,18 +7,18 @@ import (
 	"sort"
 	"time"
 
-	"github.com/go-logr/logr"
-	snapshotv1 "github.com/kubernetes-csi/external-snapshotter/client/v6/apis/volumesnapshot/v1"
-	"github.com/samber/lo"
 	cosmosalpha "github.com/b-harvest/cosmos-operator/api/v1alpha1"
 	"github.com/b-harvest/cosmos-operator/internal/fullnode"
 	"github.com/b-harvest/cosmos-operator/internal/kube"
+	"github.com/go-logr/logr"
+	snapshotv1 "github.com/kubernetes-csi/external-snapshotter/client/v6/apis/volumesnapshot/v1"
+	"github.com/samber/lo"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-const cosmosSourceLabel = "cosmos.strange.love/source"
+const cosmosSourceLabel = "cosmos.bharvest.io/source"
 
 // Client is a subset of client.Client.
 type Client interface {

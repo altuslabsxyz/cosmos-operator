@@ -87,9 +87,9 @@ var (
 	requeueResult = ctrl.Result{RequeueAfter: 3 * time.Second}
 )
 
-//+kubebuilder:rbac:groups=cosmos.strange.love,resources=cosmosfullnodes,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=cosmos.strange.love,resources=cosmosfullnodes/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=cosmos.strange.love,resources=cosmosfullnodes/finalizers,verbs=update
+//+kubebuilder:rbac:groups=cosmos.bharvest.io,resources=cosmosfullnodes,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=cosmos.bharvest.io,resources=cosmosfullnodes/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=cosmos.bharvest.io,resources=cosmosfullnodes/finalizers,verbs=update
 // Generate RBAC roles to watch and update resources. IMPORTANT!!!! All resource names must be lowercase or cluster role will not work.
 //+kubebuilder:rbac:groups="",resources=pods;persistentvolumeclaims;services;serviceaccounts;configmaps,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups="rbac.authorization.k8s.io",resources=roles;rolebindings,verbs=get;list;watch;create;update;patch;delete;bind;escalate
@@ -206,7 +206,7 @@ func (r *CosmosFullNodeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 	crd.Status.Phase = cosmosv1.FullNodePhaseCompete
 	// Requeue to constantly poll consensus state.
-	return ctrl.Result{RequeueAfter: 60 * time.Second}, nil
+	return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
 }
 
 func (r *CosmosFullNodeReconciler) resultWithErr(crd *cosmosv1.CosmosFullNode, err kube.ReconcileError) (ctrl.Result, kube.ReconcileError) {
@@ -241,6 +241,14 @@ func (r *CosmosFullNodeReconciler) updateStatus(
 					status.Height = make(map[string]uint64)
 				}
 				status.Height[k] = *v.Height + 1 // we want the block that is going through consensus, not the committed one.
+			}
+		}
+		// Cleanup Height entries for pods that no longer exist (e.g., replicas reduced)
+		if status.Height != nil {
+			for podName := range status.Height {
+				if _, exists := syncInfo[podName]; !exists {
+					delete(status.Height, podName)
+				}
 			}
 		}
 		if status.SelfHealing.PVCAutoScale != nil {

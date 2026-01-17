@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"sync"
 
-	snapshotv1 "github.com/kubernetes-csi/external-snapshotter/client/v6/apis/volumesnapshot/v1"
 	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
+	snapshotv1 "github.com/kubernetes-csi/external-snapshotter/client/v6/apis/volumesnapshot/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -61,6 +61,8 @@ func (m *mockClient[T]) Get(ctx context.Context, key client.ObjectKey, obj clien
 		*ref = m.Object.(cosmosv1.CosmosFullNode)
 	case *snapshotv1.VolumeSnapshot:
 		*ref = m.Object.(snapshotv1.VolumeSnapshot)
+	case *corev1.Pod:
+		*ref = m.Object.(corev1.Pod)
 	default:
 		panic(fmt.Errorf("unknown Object type: %T", m.ObjectList))
 	}
@@ -82,21 +84,42 @@ func (m *mockClient[T]) List(ctx context.Context, list client.ObjectList, opts .
 
 	switch ref := list.(type) {
 	case *corev1.PodList:
-		*ref = m.ObjectList.(corev1.PodList)
+		if podList, ok := m.ObjectList.(corev1.PodList); ok {
+			*ref = podList
+		}
+		// If not the right type, leave it as empty list
+	case *snapshotv1.VolumeSnapshotList:
+		if snapList, ok := m.ObjectList.(snapshotv1.VolumeSnapshotList); ok {
+			*ref = snapList
+		}
 	case *corev1.PersistentVolumeClaimList:
-		*ref = m.ObjectList.(corev1.PersistentVolumeClaimList)
+		if pvcList, ok := m.ObjectList.(corev1.PersistentVolumeClaimList); ok {
+			*ref = pvcList
+		}
 	case *corev1.ServiceList:
-		*ref = m.ObjectList.(corev1.ServiceList)
+		if svcList, ok := m.ObjectList.(corev1.ServiceList); ok {
+			*ref = svcList
+		}
 	case *corev1.ConfigMapList:
-		*ref = m.ObjectList.(corev1.ConfigMapList)
+		if cmList, ok := m.ObjectList.(corev1.ConfigMapList); ok {
+			*ref = cmList
+		}
 	case *corev1.SecretList:
-		*ref = m.ObjectList.(corev1.SecretList)
+		if secretList, ok := m.ObjectList.(corev1.SecretList); ok {
+			*ref = secretList
+		}
 	case *corev1.ServiceAccountList:
-		*ref = m.ObjectList.(corev1.ServiceAccountList)
+		if saList, ok := m.ObjectList.(corev1.ServiceAccountList); ok {
+			*ref = saList
+		}
 	case *rbacv1.RoleList:
-		*ref = m.ObjectList.(rbacv1.RoleList)
+		if roleList, ok := m.ObjectList.(rbacv1.RoleList); ok {
+			*ref = roleList
+		}
 	case *rbacv1.RoleBindingList:
-		*ref = m.ObjectList.(rbacv1.RoleBindingList)
+		if rbList, ok := m.ObjectList.(rbacv1.RoleBindingList); ok {
+			*ref = rbList
+		}
 	default:
 		panic(fmt.Errorf("unknown ObjectList type: %T", m.ObjectList))
 	}

@@ -6,14 +6,16 @@ import (
 )
 
 const (
-	apiPort     = 1317
-	grpcPort    = 9090
-	grpcWebPort = 9091
-	p2pPort     = 26656
-	privvalPort = 1234
-	promPort    = 26660
-	rosettaPort = 8080
-	rpcPort     = 26657
+	apiPort       = 1317
+	grpcPort      = 9090
+	grpcWebPort   = 9091
+	p2pPort       = 26656
+	privvalPort   = 1234
+	promPort      = 26660
+	rosettaPort   = 8080
+	jsonrpcPort   = 8545
+	jsonrpcWsPort = 8546
+	rpcPort       = 26657
 )
 
 func buildPorts(nodeType cosmosv1.FullNodeType) []corev1.ContainerPort {
@@ -54,6 +56,16 @@ var defaultPorts = [...]corev1.ContainerPort{
 		Name:          "p2p",
 		Protocol:      corev1.ProtocolTCP,
 		ContainerPort: p2pPort,
+	},
+	{
+		Name:          "jsonrpc",
+		Protocol:      corev1.ProtocolTCP,
+		ContainerPort: jsonrpcPort,
+	},
+	{
+		Name:          "jsonrpc-ws",
+		Protocol:      corev1.ProtocolTCP,
+		ContainerPort: jsonrpcWsPort,
 	},
 	{
 		Name:          "rpc",

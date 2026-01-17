@@ -58,6 +58,8 @@ func BuildPVCs(
 				if pvc.Name == name {
 					if pvc.DeletionTimestamp == nil && pvc.Status.Phase == corev1.ClaimBound {
 						existingSize = pvc.Status.Capacity[corev1.ResourceStorage]
+						// Preserve existing dataSource to prevent unnecessary PVC recreation
+						dataSource = pvc.Spec.DataSource
 					}
 					break
 				}

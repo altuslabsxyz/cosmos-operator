@@ -1,6 +1,7 @@
 package v1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -66,6 +67,88 @@ type HeightDriftMitigationSpec struct {
 	// A "rebooted" pod /status reports itself correctly and allows it to catch up to chain tip.
 	// +kubebuilder:validation:Minimum:=1
 	Threshold uint32 `json:"threshold"`
+
+	// DeepRecovery enables advanced recovery for pods that are completely stuck.
+	// When enabled, if a pod's height doesn't change for StuckDuration, a recovery script is executed.
+	// +optional
+	DeepRecovery *DeepRecoverySpec `json:"deepRecovery,omitempty"`
+}
+
+// DeepRecoverySpec defines advanced recovery options for stuck pods.
+type DeepRecoverySpec struct {
+	// Duration to wait before considering height as stuck.
+	// If pod's height doesn't change for this duration, recovery is triggered.
+	// Examples: "5m", "10m", "1h"
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Pattern=`^([0-9]+(\.[0-9]+)?(s|m|h))+$`
+	StuckDuration string `json:"stuckDuration"`
+
+	// Shell script to execute for recovery.
+	// The script will have access to environment variables:
+	// - POD_NAME: Name of the stuck pod
+	// - POD_NAMESPACE: Namespace of the stuck pod
+	// - CURRENT_HEIGHT: Current height of the stuck pod
+	// - PVC_NAME: Name of the PVC
+	// - CHAIN_HOME: Home directory of the chain
+	// +kubebuilder:validation:Required
+	RecoveryScript string `json:"recoveryScript"`
+
+	// Pod template for running the recovery script.
+	// If not specified, uses a default busybox pod.
+	// +optional
+	PodTemplate *RecoveryPodTemplate `json:"podTemplate,omitempty"`
+
+	// VolumeSnapshot settings for backup before recovery.
+	// +optional
+	VolumeSnapshot *RecoveryVolumeSnapshotSpec `json:"volumeSnapshot,omitempty"`
+
+	// Maximum number of recovery attempts within the rate limit window.
+	// Default: 3
+	// +kubebuilder:validation:Minimum=1
+	// +optional
+	MaxRetries *int32 `json:"maxRetries,omitempty"`
+
+	// Rate limit window duration (default: 5m).
+	// If maxRetries is exceeded within this window, recovery is suspended.
+	// +kubebuilder:validation:Pattern=`^([0-9]+(\.[0-9]+)?(s|m|h))+$`
+	// +optional
+	RateLimitWindow string `json:"rateLimitWindow,omitempty"`
+
+	// Suspend deep recovery operations.
+	// +optional
+	Suspend bool `json:"suspend,omitempty"`
+}
+
+// RecoveryPodTemplate defines the pod template for recovery.
+type RecoveryPodTemplate struct {
+	// Image to use for the recovery pod.
+	// +optional
+	Image string `json:"image,omitempty"`
+
+	// Command to run in the recovery pod.
+	// +optional
+	Command []string `json:"command,omitempty"`
+
+	// Resource requirements for the recovery pod.
+	// +optional
+	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
+}
+
+// RecoveryVolumeSnapshotSpec defines VolumeSnapshot settings for recovery.
+type RecoveryVolumeSnapshotSpec struct {
+	// Enabled creates a VolumeSnapshot before running recovery script.
+	// +kubebuilder:default:=false
+	Enabled bool `json:"enabled"`
+
+	// VolumeSnapshotClassName to use.
+	// +optional
+	VolumeSnapshotClassName string `json:"volumeSnapshotClassName,omitempty"`
+
+	// RetentionCount is maximum snapshots to keep per pod (default: 3).
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:default:=3
+	// +optional
+	RetentionCount *int32 `json:"retentionCount,omitempty"`
 }
 
 type PruningPodSpec struct {
@@ -84,6 +167,59 @@ type SelfHealingStatus struct {
 	// PVC auto-scaling status.
 	// +optional
 	PVCAutoScale map[string]*PVCAutoScaleStatus `json:"pvcAutoScaler"`
+
+	// DeepRecovery status per pod.
+	// +optional
+	DeepRecovery map[string]*DeepRecoveryStatus `json:"deepRecovery,omitempty"`
+}
+
+// DeepRecoveryPhase represents the current phase of deep recovery.
+// +kubebuilder:validation:Enum=Idle;Detected;SnapshotCreating;SnapshotReady;RecoveryRunning;RecoveryCompleted;RecoveryFailed;RateLimited
+type DeepRecoveryPhase string
+
+const (
+	DeepRecoveryPhaseIdle              DeepRecoveryPhase = "Idle"
+	DeepRecoveryPhaseDetected          DeepRecoveryPhase = "Detected"
+	DeepRecoveryPhaseSnapshotCreating  DeepRecoveryPhase = "SnapshotCreating"
+	DeepRecoveryPhaseSnapshotReady     DeepRecoveryPhase = "SnapshotReady"
+	DeepRecoveryPhaseRecoveryRunning   DeepRecoveryPhase = "RecoveryRunning"
+	DeepRecoveryPhaseRecoveryCompleted DeepRecoveryPhase = "RecoveryCompleted"
+	DeepRecoveryPhaseRecoveryFailed    DeepRecoveryPhase = "RecoveryFailed"
+	DeepRecoveryPhaseRateLimited       DeepRecoveryPhase = "RateLimited"
+)
+
+// DeepRecoveryStatus tracks recovery state for a single pod.
+type DeepRecoveryStatus struct {
+	// Current phase of recovery.
+	Phase DeepRecoveryPhase `json:"phase"`
+
+	// Last known height when stuck was detected.
+	// +optional
+	StuckHeight uint64 `json:"stuckHeight,omitempty"`
+
+	// When the stuck condition was first detected.
+	// +optional
+	DetectedAt *metav1.Time `json:"detectedAt,omitempty"`
+
+	// Name of the VolumeSnapshot created for recovery.
+	// +optional
+	SnapshotName string `json:"snapshotName,omitempty"`
+
+	// Name of the recovery pod.
+	// +optional
+	RecoveryPodName string `json:"recoveryPodName,omitempty"`
+
+	// Number of recovery attempts in the current rate limit window.
+	// +optional
+	RetryCount int32 `json:"retryCount,omitempty"`
+
+	// When the last recovery attempt was made.
+	// +optional
+	LastAttemptAt *metav1.Time `json:"lastAttemptAt,omitempty"`
+
+	// Message providing additional details about the current phase.
+	// +optional
+	Message string `json:"message,omitempty"`
 }
 
 type PVCAutoScaleStatus struct {

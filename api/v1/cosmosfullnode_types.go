@@ -303,16 +303,35 @@ type PodSpec struct {
 type FullNodeProbeStrategy string
 
 const (
-	FullNodeProbeStrategyNone FullNodeProbeStrategy = "None"
+	FullNodeProbeStrategyNone   FullNodeProbeStrategy = "None"
+	FullNodeProbeStrategyCustom FullNodeProbeStrategy = "Custom"
 )
 
 // FullNodeProbesSpec configures probes for created pods
 type FullNodeProbesSpec struct {
 	// Strategy controls the default probes added by the controller.
 	// None = Do not add any probes. May be necessary for Sentries using a remote signer.
-	// +kubebuilder:validation:Enum:=None
+	// Custom = Use custom readiness probe configuration specified in ReadinessProbe field.
+	// +kubebuilder:validation:Enum:=None;Custom
 	// +optional
 	Strategy FullNodeProbeStrategy `json:"strategy"`
+
+	// ReadinessProbe is a custom readiness probe configuration for the main container.
+	// Only used when Strategy is "Custom".
+	// This allows users to configure readiness checks for ports other than the default
+	// Cosmos RPC port (26657), such as EVM JSON-RPC port (8545) for Ethermint-based chains.
+	// +optional
+	ReadinessProbe *corev1.Probe `json:"readinessProbe,omitempty"`
+
+	// MaxBlockAgeSecs defines the maximum age of the latest block in seconds.
+	// If the latest block is older than this value, the node is considered unhealthy
+	// and will be removed from the load balancer. This helps detect nodes that have
+	// fallen behind the chain tip but are not in "catching up" mode.
+	// If not set or set to 0, this check is disabled.
+	// Recommended values: 60-120 seconds for chains with ~5s block time.
+	// +kubebuilder:validation:Minimum:=0
+	// +optional
+	MaxBlockAgeSecs *int64 `json:"maxBlockAgeSecs,omitempty"`
 }
 
 // PersistentVolumeClaimSpec describes the common attributes of storage devices

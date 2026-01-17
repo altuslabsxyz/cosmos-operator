@@ -4,6 +4,10 @@ set -eu
 
 ADDRBOOK_URL="$1"
 
+# Ensure the config directory exists
+echo "Ensuring config directory exists: $CONFIG_DIR"
+mkdir -p "$CONFIG_DIR"
+
 echo "Downloading address book file $ADDRBOOK_URL to $ADDRBOOK_FILE..."
 
 download_json() {
@@ -28,10 +32,10 @@ download_targz() {
 
 download_zip() {
   echo "Downloading and extracting zip..."
-  wget -c -O tmp_genesis.zip "$ADDRBOOK_URL"
-  unzip tmp_genesis.zip
-  rm tmp_genesis.zip
-  mv genesis.json "$ADDRBOOK_FILE"
+  wget -c -O /tmp/tmp_addrbook.zip "$ADDRBOOK_URL"
+  unzip -o /tmp/tmp_addrbook.zip -d /tmp
+  rm /tmp/tmp_addrbook.zip
+  mv /tmp/addrbook.json "$ADDRBOOK_FILE"
 }
 
 rm -f "$ADDRBOOK_FILE"

@@ -24,10 +24,15 @@ jobs:
   build:
     name: Build Docker Image
     runs-on: ubuntu-latest
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
+      tags: ${{ steps.meta.outputs.tags }}
+
     permissions:
       contents: read
       packages: write
       id-token: write
+      security-events: write
 
     steps:
       - name: Checkout code
@@ -133,6 +138,7 @@ jobs:
       contents: read
       packages: write
       id-token: write
+      security-events: write
 
     steps:
       - name: Install Cosign

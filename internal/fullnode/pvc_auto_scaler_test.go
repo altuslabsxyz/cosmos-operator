@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/samber/lo"
 	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
+	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"sigs.k8s.io/controller-runtime/pkg/client"

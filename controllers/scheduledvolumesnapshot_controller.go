@@ -21,12 +21,12 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/go-logr/logr"
 	cosmosv1alpha1 "github.com/b-harvest/cosmos-operator/api/v1alpha1"
 	"github.com/b-harvest/cosmos-operator/internal/cosmos"
 	"github.com/b-harvest/cosmos-operator/internal/fullnode"
 	"github.com/b-harvest/cosmos-operator/internal/kube"
 	"github.com/b-harvest/cosmos-operator/internal/volsnapshot"
+	"github.com/go-logr/logr"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -60,10 +60,10 @@ func NewScheduledVolumeSnapshotReconciler(
 	}
 }
 
-//+kubebuilder:rbac:groups=cosmos.strange.love,resources=scheduledvolumesnapshots,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=cosmos.strange.love,resources=scheduledvolumesnapshots/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=cosmos.strange.love,resources=scheduledvolumesnapshots/finalizers,verbs=update
-//+kubebuilder:rbac:groups=cosmos.strange.love,resources=cosmosfullnodes/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=cosmos.bharvest.io,resources=scheduledvolumesnapshots,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=cosmos.bharvest.io,resources=scheduledvolumesnapshots/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=cosmos.bharvest.io,resources=scheduledvolumesnapshots/finalizers,verbs=update
+//+kubebuilder:rbac:groups=cosmos.bharvest.io,resources=cosmosfullnodes/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=snapshot.storage.k8s.io,resources=volumesnapshots,verbs=get;create;delete
 //+kubebuilder:rbac:groups="",resources=pods,verbs=get;list;watch
 

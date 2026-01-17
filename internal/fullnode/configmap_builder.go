@@ -8,11 +8,11 @@ import (
 	"strings"
 
 	"github.com/BurntSushi/toml"
-	"github.com/peterbourgon/mergemap"
-	"github.com/samber/lo"
 	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
 	"github.com/b-harvest/cosmos-operator/internal/diff"
 	"github.com/b-harvest/cosmos-operator/internal/kube"
+	"github.com/peterbourgon/mergemap"
+	"github.com/samber/lo"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -45,17 +45,22 @@ func BuildConfigMaps(crd *cosmosv1.CosmosFullNode, peers Peers) ([]diff.Resource
 				instanceHeight = height
 			}
 			haltHeight := uint64(0)
-			for i, v := range crd.Spec.ChainSpec.Versions {
-				if v.SetHaltHeight {
-					haltHeight = v.UpgradeHeight
-				} else {
-					haltHeight = 0
-				}
-				if instanceHeight < v.UpgradeHeight {
+			// Find the next upgrade height that is greater than currentHeight + 1.
+			// This aligns with the version selection logic in pod_builder.go.
+			//
+			// In Cosmos SDK, when an upgrade is scheduled at height N, the upgrade handler runs
+			// in the BeginBlock/PreBlocker of block N. When DB shows height N-1, we switch to the
+			// new image. At that point, we should NOT set halt-height=N because we already have
+			// the new image that will handle the upgrade.
+			//
+			// We only set halt-height for upgrades BEYOND the current version's upgrade.
+			for _, v := range crd.Spec.ChainSpec.Versions {
+				if instanceHeight+1 < v.UpgradeHeight {
+					// Set halt height only if SetHaltHeight is true for the next upgrade
+					if v.SetHaltHeight {
+						haltHeight = v.UpgradeHeight
+					}
 					break
-				}
-				if i == len(crd.Spec.ChainSpec.Versions)-1 {
-					haltHeight = 0
 				}
 			}
 			appCfg.HaltHeight = ptr(haltHeight)

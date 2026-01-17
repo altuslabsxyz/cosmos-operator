@@ -22,11 +22,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/go-logr/logr"
-	snapshotv1 "github.com/kubernetes-csi/external-snapshotter/client/v6/apis/volumesnapshot/v1"
 	cosmosalpha "github.com/b-harvest/cosmos-operator/api/v1alpha1"
 	"github.com/b-harvest/cosmos-operator/internal/kube"
 	"github.com/b-harvest/cosmos-operator/internal/statefuljob"
+	"github.com/go-logr/logr"
+	snapshotv1 "github.com/kubernetes-csi/external-snapshotter/client/v6/apis/volumesnapshot/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/record"
@@ -76,9 +76,9 @@ func NewStatefulJob(client client.Client, recorder record.EventRecorder, missing
 
 var requeueStatefulJob = ctrl.Result{RequeueAfter: 60 * time.Second}
 
-//+kubebuilder:rbac:groups=cosmos.strange.love,resources=statefuljobs,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=cosmos.strange.love,resources=statefuljobs/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=cosmos.strange.love,resources=statefuljobs/finalizers,verbs=update
+//+kubebuilder:rbac:groups=cosmos.bharvest.io,resources=statefuljobs,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=cosmos.bharvest.io,resources=statefuljobs/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=cosmos.bharvest.io,resources=statefuljobs/finalizers,verbs=update
 //+kubebuilder:rbac:groups=snapshot.storage.k8s.io,resources=volumesnapshots,verbs=get;list;watch
 //+kubebuilder:rbac:groups="",resources=persistentvolumeclaims,verbs=get;list;watch;create;delete
 //+kubebuilder:rbac:groups="batch",resources=jobs,verbs=get;list;watch;create
