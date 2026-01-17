@@ -60,7 +60,7 @@ linters:
 
     # Best practices
     - nolintlint       # Reports ill-formed or insufficient nolint directives
-    - exportloopref    # Checks for pointers to loop variables
+    - copyloopvar      # Detects places where loop variables are copied (replaces deprecated exportloopref)
     - gci              # Imports order
 
 linters-settings:
