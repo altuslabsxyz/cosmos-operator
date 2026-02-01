@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	cosmossdk.io/log v1.6.1
 	cosmossdk.io/store v1.10.0-rc.2
-	github.com/BurntSushi/toml v1.4.0
+	github.com/BurntSushi/toml v1.6.0
 	github.com/cosmos/cosmos-db v1.1.3
 	github.com/go-logr/logr v1.4.3
 	github.com/go-logr/zapr v1.2.4
