@@ -37,13 +37,13 @@ func TestBuildServices(t *testing.T) {
 			require.Equal(t, "test", p2p.Namespace)
 
 			wantLabels := map[string]string{
-				"app.kubernetes.io/created-by": "cosmos-operator",
-				"app.kubernetes.io/name":       "terra",
-				"app.kubernetes.io/component":  "p2p",
-				"app.kubernetes.io/version":    "v6.0.0",
-				"app.kubernetes.io/instance":   fmt.Sprintf("terra-%d", i),
-				"cosmos.altuslabsxyz.io/network":   "testnet",
-				"cosmos.altuslabsxyz.io/type":      "FullNode",
+				"app.kubernetes.io/created-by":   "cosmos-operator",
+				"app.kubernetes.io/name":         "terra",
+				"app.kubernetes.io/component":    "p2p",
+				"app.kubernetes.io/version":      "v6.0.0",
+				"app.kubernetes.io/instance":     fmt.Sprintf("terra-%d", i),
+				"cosmos.altuslabsxyz.io/network": "testnet",
+				"cosmos.altuslabsxyz.io/type":    "FullNode",
 			}
 			require.Equal(t, wantLabels, p2p.Labels)
 
@@ -183,12 +183,12 @@ func TestBuildServices(t *testing.T) {
 		require.Equal(t, map[string]string{"app.kubernetes.io/name": "terra"}, rpc.Spec.Selector)
 
 		wantLabels := map[string]string{
-			"app.kubernetes.io/created-by": "cosmos-operator",
-			"app.kubernetes.io/name":       "terra",
-			"app.kubernetes.io/component":  "rpc",
-			"app.kubernetes.io/version":    "v6.0.0",
-			"cosmos.altuslabsxyz.io/network":   "testnet",
-			"cosmos.altuslabsxyz.io/type":      "FullNode",
+			"app.kubernetes.io/created-by":   "cosmos-operator",
+			"app.kubernetes.io/name":         "terra",
+			"app.kubernetes.io/component":    "rpc",
+			"app.kubernetes.io/version":      "v6.0.0",
+			"cosmos.altuslabsxyz.io/network": "testnet",
+			"cosmos.altuslabsxyz.io/type":    "FullNode",
 		}
 		require.Equal(t, wantLabels, rpc.Labels)
 
