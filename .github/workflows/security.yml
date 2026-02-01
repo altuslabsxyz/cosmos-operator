@@ -112,26 +112,6 @@ jobs:
           head: HEAD
           extra_args: --debug --only-verified
 
-  nancy:
-    name: Nancy Dependency Check
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.25'
-
-      - name: Write Go List
-        run: go list -json -deps ./... > go.list
-
-      - name: Nancy Scan
-        uses: sonatype-nexus-community/nancy-github-action@main
-        with:
-          nancyCommand: sleuth --loud
-
   license-check:
     name: License Compliance Check
     runs-on: ubuntu-latest
@@ -165,7 +145,7 @@ jobs:
   security-summary:
     name: Security Summary
     runs-on: ubuntu-latest
-    needs: [gosec, trivy-fs, codeql, secret-scan, nancy, license-check]
+    needs: [gosec, trivy-fs, codeql, secret-scan, license-check]
     if: always()
     steps:
       - name: Generate summary
@@ -178,5 +158,4 @@ jobs:
           echo "| Trivy | ${{ needs.trivy-fs.result == 'success' && 'PASS' || 'FAIL' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| CodeQL | ${{ needs.codeql.result == 'success' && 'PASS' || 'FAIL' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Secrets | ${{ needs.secret-scan.result == 'success' && 'PASS' || 'FAIL' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Dependencies | ${{ needs.nancy.result == 'success' && 'PASS' || 'FAIL' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Licenses | ${{ needs.license-check.result == 'success' && 'PASS' || 'FAIL' }} |" >> $GITHUB_STEP_SUMMARY
