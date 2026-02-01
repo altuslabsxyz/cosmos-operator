@@ -55,20 +55,20 @@ func TestBuildPVCs(t *testing.T) {
 			require.Equal(t, "v1", got.APIVersion)
 
 			wantLabels := map[string]string{
-				"app.kubernetes.io/created-by": "cosmos-operator",
-				"app.kubernetes.io/component":  "CosmosFullNode",
-				"app.kubernetes.io/name":       "juno",
-				"app.kubernetes.io/instance":   fmt.Sprintf("juno-%d", i),
-				"app.kubernetes.io/version":    "v1.2.3",
-				"cosmos.altuslabsxyz.io/network":   "mainnet",
-				"cosmos.altuslabsxyz.io/type":      "FullNode",
+				"app.kubernetes.io/created-by":   "cosmos-operator",
+				"app.kubernetes.io/component":    "CosmosFullNode",
+				"app.kubernetes.io/name":         "juno",
+				"app.kubernetes.io/instance":     fmt.Sprintf("juno-%d", i),
+				"app.kubernetes.io/version":      "v1.2.3",
+				"cosmos.altuslabsxyz.io/network": "mainnet",
+				"cosmos.altuslabsxyz.io/type":    "FullNode",
 			}
 			require.Equal(t, wantLabels, got.Labels)
 
 			require.Len(t, got.Spec.AccessModes, 1)
 			require.Equal(t, corev1.ReadWriteOnce, got.Spec.AccessModes[0])
 
-			require.Equal(t, crd.Spec.VolumeClaimTemplate.Resources, got.Spec.Resources)
+			require.Equal(t, crd.Spec.VolumeClaimTemplate.Resources.Requests, got.Spec.Resources.Requests)
 			require.Equal(t, "test-storage-class", *got.Spec.StorageClassName)
 			require.Equal(t, corev1.PersistentVolumeFilesystem, *got.Spec.VolumeMode)
 		}

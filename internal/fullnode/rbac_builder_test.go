@@ -28,12 +28,12 @@ func TestBuildRBAC(t *testing.T) {
 		require.Equal(t, "test", sa.Namespace)
 
 		wantLabels := map[string]string{
-			"app.kubernetes.io/created-by": "cosmos-operator",
-			"app.kubernetes.io/name":       "hub",
-			"app.kubernetes.io/component":  "vc",
-			"app.kubernetes.io/version":    "v6.0.0",
-			"cosmos.altuslabsxyz.io/network":   "testnet",
-			"cosmos.altuslabsxyz.io/type":      "FullNode",
+			"app.kubernetes.io/created-by":   "cosmos-operator",
+			"app.kubernetes.io/name":         "hub",
+			"app.kubernetes.io/component":    "vc",
+			"app.kubernetes.io/version":      "v6.0.0",
+			"cosmos.altuslabsxyz.io/network": "testnet",
+			"cosmos.altuslabsxyz.io/type":    "FullNode",
 		}
 		require.Equal(t, wantLabels, sa.Labels)
 
@@ -47,12 +47,12 @@ func TestBuildRBAC(t *testing.T) {
 		require.Equal(t, "test", role.Namespace)
 
 		wantLabels = map[string]string{
-			"app.kubernetes.io/created-by": "cosmos-operator",
-			"app.kubernetes.io/name":       "hub",
-			"app.kubernetes.io/component":  "vc",
-			"app.kubernetes.io/version":    "v6.0.0",
-			"cosmos.altuslabsxyz.io/network":   "testnet",
-			"cosmos.altuslabsxyz.io/type":      "FullNode",
+			"app.kubernetes.io/created-by":   "cosmos-operator",
+			"app.kubernetes.io/name":         "hub",
+			"app.kubernetes.io/component":    "vc",
+			"app.kubernetes.io/version":      "v6.0.0",
+			"cosmos.altuslabsxyz.io/network": "testnet",
+			"cosmos.altuslabsxyz.io/type":    "FullNode",
 		}
 		require.Equal(t, wantLabels, role.Labels)
 
@@ -84,12 +84,12 @@ func TestBuildRBAC(t *testing.T) {
 		require.Equal(t, "test", rb.Namespace)
 
 		wantLabels = map[string]string{
-			"app.kubernetes.io/created-by": "cosmos-operator",
-			"app.kubernetes.io/name":       "hub",
-			"app.kubernetes.io/component":  "vc",
-			"app.kubernetes.io/version":    "v6.0.0",
-			"cosmos.altuslabsxyz.io/network":   "testnet",
-			"cosmos.altuslabsxyz.io/type":      "FullNode",
+			"app.kubernetes.io/created-by":   "cosmos-operator",
+			"app.kubernetes.io/name":         "hub",
+			"app.kubernetes.io/component":    "vc",
+			"app.kubernetes.io/version":      "v6.0.0",
+			"cosmos.altuslabsxyz.io/network": "testnet",
+			"cosmos.altuslabsxyz.io/type":    "FullNode",
 		}
 		require.Equal(t, wantLabels, rb.Labels)
 

@@ -19,6 +19,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+
 	// Add Pprof endpoints.
 	_ "net/http/pprof"
 	"os"
@@ -32,11 +33,13 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	cosmosv1 "github.com/altuslabsxyz/cosmos-operator/api/v1"
 	cosmosv1alpha1 "github.com/altuslabsxyz/cosmos-operator/api/v1alpha1"
@@ -135,9 +138,10 @@ func startManager(cmd *cobra.Command, _ []string) error {
 	}
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme:                 scheme,
-		MetricsBindAddress:     metricsAddr,
-		Port:                   9443,
+		Scheme: scheme,
+		Metrics: metricsserver.Options{
+			BindAddress: metricsAddr,
+		},
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         enableLeaderElection,
 		LeaderElectionID:       "16e1bc09.strange.love",

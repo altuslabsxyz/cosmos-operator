@@ -405,10 +405,10 @@ func (m *DeepRecoveryManager) createVolumeSnapshot(
 			Name:      snapshotName,
 			Namespace: crd.Namespace,
 			Labels: map[string]string{
-				"app.kubernetes.io/managed-by": "cosmos-operator",
-				"cosmos.altuslabsxyz.io/recovery":  crd.Name,
-				"cosmos.altuslabsxyz.io/pod":       pod.PodName,
-				"cosmos.altuslabsxyz.io/type":      "deep-recovery-backup",
+				"app.kubernetes.io/managed-by":    "cosmos-operator",
+				"cosmos.altuslabsxyz.io/recovery": crd.Name,
+				"cosmos.altuslabsxyz.io/pod":      pod.PodName,
+				"cosmos.altuslabsxyz.io/type":     "deep-recovery-backup",
 			},
 		},
 		Spec: snapshotv1.VolumeSnapshotSpec{
@@ -465,10 +465,10 @@ func (m *DeepRecoveryManager) createRecoveryPod(
 			Name:      recoveryPodName,
 			Namespace: crd.Namespace,
 			Labels: map[string]string{
-				"app.kubernetes.io/managed-by": "cosmos-operator",
-				"cosmos.altuslabsxyz.io/recovery":  crd.Name,
-				"cosmos.altuslabsxyz.io/pod":       podInfo.PodName,
-				"cosmos.altuslabsxyz.io/type":      "recovery-pod",
+				"app.kubernetes.io/managed-by":    "cosmos-operator",
+				"cosmos.altuslabsxyz.io/recovery": crd.Name,
+				"cosmos.altuslabsxyz.io/pod":      podInfo.PodName,
+				"cosmos.altuslabsxyz.io/type":     "recovery-pod",
 			},
 		},
 		Spec: corev1.PodSpec{

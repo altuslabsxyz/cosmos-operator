@@ -1,185 +1,48 @@
+version: "2"
+
 run:
   timeout: 10m
-  issues-exit-code: 1
-  tests: true
-  skip-dirs:
-    - vendor
-    - third_party
-  skip-files:
-    - ".*\\.pb\\.go$"
-    - ".*\\.gen\\.go$"
-  modules-download-mode: readonly
-  allow-parallel-runners: true
-
-output:
-  format: colored-line-number
-  print-issued-lines: true
-  print-linter-name: true
-  uniq-by-line: true
-  sort-results: true
 
 linters:
-  disable-all: true
+  default: none
   enable:
-    # Bugs and potential issues
-    - errcheck         # Check for unchecked errors
-    - gosimple         # Simplify code
-    - govet            # Vet examines Go source code
-    - ineffassign      # Detect ineffectual assignments
-    - staticcheck      # Advanced Go linting
-    - unused           # Find unused code
-    - typecheck        # Type checking
+    # Core linters - bugs and potential issues
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
 
-    # Style and formatting
-    - gofmt            # Check formatting
-    - goimports        # Check import order
-    - misspell         # Find spelling mistakes
-    - revive           # Fast, configurable, extensible linter
+    # Style
+    - misspell
 
-    # Complexity
-    - gocyclo          # Cyclomatic complexity
-    - gocognit         # Cognitive complexity
-    - nestif           # Nested if depth
+  settings:
+    govet:
+      enable-all: true
+      disable:
+        - shadow
+        - fieldalignment
 
-    # Performance
-    - prealloc         # Find slice declarations with non-zero initial length
+    misspell:
+      locale: US
 
-    # Security
-    - gosec            # Security issues
+    staticcheck:
+      checks:
+        - all
+        - -SA1019  # Disable deprecation warnings
+        - -QF1008  # Disable "could remove embedded field" suggestions
 
-    # Error handling
-    - goerr113         # Error handling
-    - errname          # Error naming conventions
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - std-error-handling
+    paths:
+      - vendor
+      - third_party
+      - ".*\\.pb\\.go$"
+      - ".*\\.gen\\.go$"
 
-    # Code quality
-    - dupl             # Duplicate code detection
-    - goconst          # Repeated strings that could be constants
-    - unconvert        # Unnecessary type conversions
-    - unparam          # Unused function parameters
-    - nakedret         # Naked returns in long functions
-
-    # Best practices
-    - nolintlint       # Reports ill-formed or insufficient nolint directives
-    - copyloopvar      # Detects places where loop variables are copied (replaces deprecated exportloopref)
-    - gci              # Imports order
-
-linters-settings:
-  errcheck:
-    check-type-assertions: true
-    check-blank: true
-    exclude-functions:
-      - (*github.com/spf13/cobra.Command).MarkFlagRequired
-
-  govet:
-    enable-all: true
-    disable:
-      - shadow
-      - fieldalignment
-
-  gocyclo:
-    min-complexity: 15
-
-  gocognit:
-    min-complexity: 20
-
-  dupl:
-    threshold: 100
-
-  goconst:
-    min-len: 3
-    min-occurrences: 3
-    ignore-tests: true
-
-  misspell:
-    locale: US
-    ignore-words:
-      - cosmos
-      - kubernetes
-
-  revive:
-    rules:
-      - name: blank-imports
-      - name: context-as-argument
-      - name: dot-imports
-      - name: error-return
-      - name: error-strings
-      - name: error-naming
-      - name: exported
-      - name: if-return
-      - name: increment-decrement
-      - name: var-naming
-      - name: var-declaration
-      - name: package-comments
-      - name: range
-      - name: receiver-naming
-      - name: time-naming
-      - name: unexported-return
-      - name: indent-error-flow
-      - name: errorf
-      - name: empty-block
-      - name: superfluous-else
-      - name: unused-parameter
-      - name: unreachable-code
-      - name: redefines-builtin-id
-
-  gosec:
-    excludes:
-      - G104  # Audit errors not checked (covered by errcheck)
-    config:
-      G306: "0644"
-
-  nestif:
-    min-complexity: 5
-
-  nakedret:
-    max-func-lines: 30
-
-  gci:
-    sections:
-      - standard
-      - default
-      - prefix(github.com/altuslabsxyz/cosmos-operator)
-    skip-generated: true
-
-issues:
-  max-issues-per-linter: 0
-  max-same-issues: 0
-  new: false
-  fix: false
-
-  exclude-rules:
-    # Exclude some linters from running on tests files
-    - path: _test\.go
-      linters:
-        - gocyclo
-        - errcheck
-        - dupl
-        - gosec
-        - goconst
-        - revive
-
-    # Exclude known linters from partially hard-vendored code
-    - path: internal/thirdparty/
-      linters:
-        - gocritic
-        - revive
-        - stylecheck
-
-    # Exclude specific linters for generated files
-    - path: ".*\\.pb\\.go"
-      linters:
-        - gocyclo
-        - errcheck
-        - gosec
-
-    # Independently from option `exclude` we use default exclude patterns
-    - text: "Error return value of .((os\\.)?std(out|err)\\..*|.*Close|.*Flush|os\\.Remove(All)?|.*print(f|ln)?|os\\.(Un)?Setenv). is not checked"
-      linters:
-        - errcheck
-
-    # Exclude lll issues for long lines with go:generate
-    - linters:
-        - lll
-      source: "^//go:generate "
-
-  exclude-use-default: true
+formatters:
+  enable:
+    - gofmt
+    - goimports

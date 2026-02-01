@@ -154,12 +154,12 @@ func (c *CacheController) Reconcile(ctx context.Context, req reconcile.Request) 
 func (c *CacheController) Invalidate(controller client.ObjectKey, pods []string) {
 	v, _ := c.cache.Get(controller)
 	now := time.Now()
-	for _, s := range v {
+	for i := range v {
 		for _, pod := range pods {
-			if s.Pod.Name == pod {
-				s.Status = CometStatus{}
-				s.Err = fmt.Errorf("invalidated")
-				s.TS = now
+			if v[i].Pod.Name == pod {
+				v[i].Status = CometStatus{}
+				v[i].Err = fmt.Errorf("invalidated")
+				v[i].TS = now
 			}
 		}
 	}
