@@ -30,7 +30,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
-	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	cosmosv1 "github.com/altuslabsxyz/cosmos-operator/api/v1"
 	"github.com/altuslabsxyz/cosmos-operator/internal/cosmos"
@@ -322,21 +321,16 @@ func (r *CosmosFullNodeReconciler) SetupWithManager(ctx context.Context, mgr ctr
 	cbuilder := ctrl.NewControllerManagedBy(mgr).For(&cosmosv1.CosmosFullNode{})
 
 	// Watch for delete events for certain resources.
-	for _, kind := range []*source.Kind{
-		{Type: &corev1.Pod{}},
-		{Type: &corev1.PersistentVolumeClaim{}},
-		{Type: &corev1.ConfigMap{}},
-		{Type: &corev1.Service{}},
-		{Type: &corev1.Secret{}},
-	} {
-		cbuilder.Watches(
-			kind,
-			&handler.EnqueueRequestForOwner{OwnerType: &cosmosv1.CosmosFullNode{}, IsController: true},
-			builder.WithPredicates(&predicate.Funcs{
-				DeleteFunc: func(_ event.DeleteEvent) bool { return true },
-			}),
-		)
-	}
+	ownerHandler := handler.EnqueueRequestForOwner(mgr.GetScheme(), mgr.GetRESTMapper(), &cosmosv1.CosmosFullNode{}, handler.OnlyControllerOwner())
+	deleteOnlyPredicate := builder.WithPredicates(&predicate.Funcs{
+		DeleteFunc: func(_ event.DeleteEvent) bool { return true },
+	})
+
+	cbuilder.Watches(&corev1.Pod{}, ownerHandler, deleteOnlyPredicate)
+	cbuilder.Watches(&corev1.PersistentVolumeClaim{}, ownerHandler, deleteOnlyPredicate)
+	cbuilder.Watches(&corev1.ConfigMap{}, ownerHandler, deleteOnlyPredicate)
+	cbuilder.Watches(&corev1.Service{}, ownerHandler, deleteOnlyPredicate)
+	cbuilder.Watches(&corev1.Secret{}, ownerHandler, deleteOnlyPredicate)
 
 	return cbuilder.Complete(r)
 }

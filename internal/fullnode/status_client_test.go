@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"golang.org/x/sync/errgroup"
+	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	cosmosv1 "github.com/altuslabsxyz/cosmos-operator/api/v1"
@@ -26,7 +27,30 @@ func (t *threadUnsafeClient) Update(ctx context.Context, obj client.Object, opts
 	return nil
 }
 
-func (t *threadUnsafeClient) Status() client.StatusWriter { return t }
+func (t *threadUnsafeClient) Status() client.StatusWriter {
+	return &threadUnsafeStatusWriter{t}
+}
+
+type threadUnsafeStatusWriter struct {
+	*threadUnsafeClient
+}
+
+func (t *threadUnsafeStatusWriter) Create(ctx context.Context, obj client.Object, subResource client.Object, opts ...client.SubResourceCreateOption) error {
+	return nil
+}
+
+func (t *threadUnsafeStatusWriter) Update(ctx context.Context, obj client.Object, opts ...client.SubResourceUpdateOption) error {
+	t.threadUnsafeClient.UpdateCount++
+	return nil
+}
+
+func (t *threadUnsafeStatusWriter) Patch(ctx context.Context, obj client.Object, patch client.Patch, opts ...client.SubResourcePatchOption) error {
+	return nil
+}
+
+func (t *threadUnsafeStatusWriter) Apply(ctx context.Context, obj runtime.ApplyConfiguration, opts ...client.SubResourceApplyOption) error {
+	return nil
+}
 
 func TestStatusClient_SyncUpdate(t *testing.T) {
 	type mClient = mockClient[*cosmosv1.CosmosFullNode]

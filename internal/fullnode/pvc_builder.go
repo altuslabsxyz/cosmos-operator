@@ -107,12 +107,18 @@ func pvcResources(
 	name string,
 	dataSource *dataSource,
 	existingSize resource.Quantity,
-) corev1.ResourceRequirements {
-	var reqs = crd.Spec.VolumeClaimTemplate.Resources.DeepCopy()
+) corev1.VolumeResourceRequirements {
+	// Convert from CRD's ResourceRequirements to VolumeResourceRequirements
+	var reqs = corev1.VolumeResourceRequirements{
+		Requests: crd.Spec.VolumeClaimTemplate.Resources.Requests.DeepCopy(),
+	}
+	if crd.Spec.VolumeClaimTemplate.Resources.Limits != nil {
+		reqs.Limits = crd.Spec.VolumeClaimTemplate.Resources.Limits.DeepCopy()
+	}
 
 	if dataSource != nil {
 		reqs.Requests[corev1.ResourceStorage] = dataSource.size
-		return *reqs
+		return reqs
 	}
 
 	if autoScale := crd.Status.SelfHealing.PVCAutoScale; autoScale != nil {
@@ -130,5 +136,5 @@ func pvcResources(
 		reqs.Requests[corev1.ResourceStorage] = existingSize
 	}
 
-	return *reqs
+	return reqs
 }

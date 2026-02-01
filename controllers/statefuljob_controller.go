@@ -32,7 +32,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	cosmosalpha "github.com/altuslabsxyz/cosmos-operator/api/v1alpha1"
 	"github.com/altuslabsxyz/cosmos-operator/internal/kube"
@@ -205,7 +204,7 @@ func (r *StatefulJobReconciler) SetupWithManager(_ context.Context, mgr ctrl.Man
 
 	// Watch for delete events for jobs.
 	cbuilder.Watches(
-		&source.Kind{Type: &batchv1.Job{}},
+		&batchv1.Job{},
 		&handler.EnqueueRequestForObject{},
 		builder.WithPredicates(
 			statefuljob.LabelSelectorPredicate(),

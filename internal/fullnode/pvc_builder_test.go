@@ -68,7 +68,7 @@ func TestBuildPVCs(t *testing.T) {
 			require.Len(t, got.Spec.AccessModes, 1)
 			require.Equal(t, corev1.ReadWriteOnce, got.Spec.AccessModes[0])
 
-			require.Equal(t, crd.Spec.VolumeClaimTemplate.Resources, got.Spec.Resources)
+			require.Equal(t, crd.Spec.VolumeClaimTemplate.Resources.Requests, got.Spec.Resources.Requests)
 			require.Equal(t, "test-storage-class", *got.Spec.StorageClassName)
 			require.Equal(t, corev1.PersistentVolumeFilesystem, *got.Spec.VolumeMode)
 		}

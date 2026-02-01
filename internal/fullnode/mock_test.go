@@ -10,6 +10,7 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	cosmosv1 "github.com/altuslabsxyz/cosmos-operator/api/v1"
@@ -193,9 +194,54 @@ func (m *mockClient[T]) Scheme() *runtime.Scheme {
 }
 
 func (m *mockClient[T]) Status() client.StatusWriter {
-	return m
+	return &mockStatusWriter[T]{m}
+}
+
+// mockStatusWriter wraps mockClient to implement SubResourceWriter interface
+type mockStatusWriter[T client.Object] struct {
+	*mockClient[T]
+}
+
+func (m *mockStatusWriter[T]) Create(ctx context.Context, obj client.Object, subResource client.Object, opts ...client.SubResourceCreateOption) error {
+	return nil
+}
+
+func (m *mockStatusWriter[T]) Update(ctx context.Context, obj client.Object, opts ...client.SubResourceUpdateOption) error {
+	m.mockClient.mu.Lock()
+	defer m.mockClient.mu.Unlock()
+
+	if ctx == nil {
+		panic("nil context")
+	}
+	m.mockClient.UpdateCount++
+	m.mockClient.LastUpdateObject = obj.(T)
+	return m.mockClient.UpdateErr
+}
+
+func (m *mockStatusWriter[T]) Patch(ctx context.Context, obj client.Object, patch client.Patch, opts ...client.SubResourcePatchOption) error {
+	return nil
+}
+
+func (m *mockStatusWriter[T]) Apply(ctx context.Context, obj runtime.ApplyConfiguration, opts ...client.SubResourceApplyOption) error {
+	return nil
 }
 
 func (m *mockClient[T]) RESTMapper() meta.RESTMapper {
 	panic("implement me")
+}
+
+func (m *mockClient[T]) GroupVersionKindFor(obj runtime.Object) (schema.GroupVersionKind, error) {
+	return schema.GroupVersionKind{}, nil
+}
+
+func (m *mockClient[T]) IsObjectNamespaced(obj runtime.Object) (bool, error) {
+	return true, nil
+}
+
+func (m *mockClient[T]) SubResource(subResource string) client.SubResourceClient {
+	panic("implement me")
+}
+
+func (m *mockClient[T]) Apply(ctx context.Context, obj runtime.ApplyConfiguration, opts ...client.ApplyOption) error {
+	return nil
 }
