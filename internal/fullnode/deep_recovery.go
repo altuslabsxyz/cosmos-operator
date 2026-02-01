@@ -598,13 +598,15 @@ func (m *DeepRecoveryManager) cleanupOldSnapshots(
 		return err
 	}
 
-	if int32(len(snapshots.Items)) <= retentionCount {
+	// #nosec G115 -- len() always returns non-negative value
+	snapshotCount := int32(len(snapshots.Items))
+	if snapshotCount <= retentionCount {
 		return nil
 	}
 
 	// Sort by creation time and delete oldest
 	// Simple approach: delete if over retention count
-	for i := int32(0); i < int32(len(snapshots.Items))-retentionCount; i++ {
+	for i := int32(0); i < snapshotCount-retentionCount; i++ {
 		_ = m.client.Delete(ctx, &snapshots.Items[i])
 	}
 

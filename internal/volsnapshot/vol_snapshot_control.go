@@ -55,8 +55,9 @@ type Candidate = cosmosalpha.SnapshotCandidate
 func (control VolumeSnapshotControl) FindCandidate(ctx context.Context, crd *cosmosalpha.ScheduledVolumeSnapshot) (Candidate, error) {
 	cctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
+	synced := control.podFilter.SyncedPods(cctx, client.ObjectKey{Namespace: crd.Namespace, Name: crd.Spec.FullNodeRef.Name})
+	// #nosec G115 -- len() always returns non-negative value
 	var (
-		synced     = control.podFilter.SyncedPods(cctx, client.ObjectKey{Namespace: crd.Namespace, Name: crd.Spec.FullNodeRef.Name})
 		availCount = int32(len(synced))
 		minAvail   = crd.Spec.MinAvailable
 	)

@@ -153,7 +153,13 @@ func checkVersion(
 	store := rootmulti.NewStore(db, log.NewNopLogger(), nil)
 
 	height := store.LatestVersion()
-	db.Close()
+	if err := db.Close(); err != nil {
+		return fmt.Errorf("failed to close db: %w", err)
+	}
+
+	if height < 0 {
+		return fmt.Errorf("invalid height %d: must be non-negative", height)
+	}
 
 	if crd == nil {
 		crd = new(cosmosv1.CosmosFullNode)
@@ -162,7 +168,8 @@ func checkVersion(
 		}
 	}
 
-	if err := patchStatusHeightIfNecessary(ctx, kClient, crd, thisPod.Name, uint64(height)); err != nil {
+	currentHeight := uint64(height) // #nosec G115 -- height verified non-negative above
+	if err := patchStatusHeightIfNecessary(ctx, kClient, crd, thisPod.Name, currentHeight); err != nil {
 		return err
 	}
 
@@ -174,7 +181,6 @@ func checkVersion(
 	// last committed block before the upgrade. Therefore, when DB shows height N-1,
 	// we need to use the new image that will handle the upgrade at height N.
 	image := crd.Spec.PodTemplate.Image
-	currentHeight := uint64(height)
 
 	// Find the highest version where UpgradeHeight <= currentHeight + 1
 	// This must match the logic in pod_builder.go findVersion() exactly

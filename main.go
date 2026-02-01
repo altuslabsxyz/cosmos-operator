@@ -19,9 +19,7 @@ package main
 import (
 	"fmt"
 	"net/http"
-
-	// Add Pprof endpoints.
-	_ "net/http/pprof"
+	"net/http/pprof"
 	"os"
 	"time"
 
@@ -123,8 +121,23 @@ func rootCmd() *cobra.Command {
 
 func startManager(cmd *cobra.Command, _ []string) error {
 	go func() {
+		mux := http.NewServeMux()
+		mux.HandleFunc("/debug/pprof/", pprof.Index)
+		mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+		mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+		mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+		mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+
+		server := &http.Server{
+			Addr:              "localhost:6060",
+			Handler:           mux,
+			ReadHeaderTimeout: 10 * time.Second,
+			ReadTimeout:       60 * time.Second,
+			WriteTimeout:      60 * time.Second,
+			IdleTimeout:       120 * time.Second,
+		}
 		setupLog.Info("Serving pprof endpoints at localhost:6060/debug/pprof")
-		if err := http.ListenAndServe("localhost:6060", nil); err != nil {
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			setupLog.Error(err, "Pprof server exited with error")
 		}
 	}()

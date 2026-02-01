@@ -89,7 +89,9 @@ func (h *Comet) writeResponse(code int, w http.ResponseWriter, resp healthRespon
 	w.Header().Set("Content-Type", "application/json")
 	mustJSONEncode(resp, w)
 	// Only log when status code changes, so we don't spam logs.
-	if atomic.SwapInt32(&h.lastStatus, int32(code)) != int32(code) {
+	// #nosec G115 -- HTTP status codes are always within int32 range (100-599)
+	code32 := int32(code)
+	if atomic.SwapInt32(&h.lastStatus, code32) != code32 {
 		h.logger.Info("Health state change", "statusCode", code, "response", resp)
 	}
 }
