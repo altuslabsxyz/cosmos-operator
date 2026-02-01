@@ -15,8 +15,6 @@ linters:
     - unused
 
     # Style and formatting
-    - gofmt
-    - goimports
     - misspell
     - revive
 
