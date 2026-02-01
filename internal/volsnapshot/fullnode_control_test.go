@@ -10,8 +10,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
-	cosmosalpha "github.com/b-harvest/cosmos-operator/api/v1alpha1"
+	cosmosv1 "github.com/altuslabsxyz/cosmos-operator/api/v1"
+	cosmosalpha "github.com/altuslabsxyz/cosmos-operator/api/v1alpha1"
 )
 
 type mockStatusSyncer func(ctx context.Context, key client.ObjectKey, update func(status *cosmosv1.FullNodeStatus)) error
@@ -84,7 +84,7 @@ func TestFullNodeControl_SignalPodDeletion(t *testing.T) {
 			var got cosmosv1.FullNodeStatus
 			update(&got)
 			want := map[string]cosmosv1.FullNodeSnapshotStatus{
-				"default.my-snapshot.v1alpha1.cosmos.bharvest.io": {PodCandidate: "target-pod"},
+				"default.my-snapshot.v1alpha1.cosmos.altuslabsxyz.io": {PodCandidate: "target-pod"},
 			}
 			require.Equal(t, want, got.ScheduledSnapshotStatus)
 
@@ -133,18 +133,18 @@ func TestFullNodeControl_SignalPodRestoration(t *testing.T) {
 
 			var got cosmosv1.FullNodeStatus
 			got.ScheduledSnapshotStatus = map[string]cosmosv1.FullNodeSnapshotStatus{
-				"default.my-snapshot.v1alpha1.cosmos.bharvest.io": {PodCandidate: "target-pod"},
+				"default.my-snapshot.v1alpha1.cosmos.altuslabsxyz.io": {PodCandidate: "target-pod"},
 			}
 			update(&got)
 			require.Empty(t, got.ScheduledSnapshotStatus)
 
 			got.ScheduledSnapshotStatus = map[string]cosmosv1.FullNodeSnapshotStatus{
-				"default.my-snapshot.v1alpha1.cosmos.bharvest.io":      {PodCandidate: "target-pod"},
-				"default.another-snapshot.v1alpha1.cosmos.bharvest.io": {PodCandidate: "another-pod"},
+				"default.my-snapshot.v1alpha1.cosmos.altuslabsxyz.io":      {PodCandidate: "target-pod"},
+				"default.another-snapshot.v1alpha1.cosmos.altuslabsxyz.io": {PodCandidate: "another-pod"},
 			}
 			update(&got)
 			want := map[string]cosmosv1.FullNodeSnapshotStatus{
-				"default.another-snapshot.v1alpha1.cosmos.bharvest.io": {PodCandidate: "another-pod"},
+				"default.another-snapshot.v1alpha1.cosmos.altuslabsxyz.io": {PodCandidate: "another-pod"},
 			}
 			require.Equal(t, want, got.ScheduledSnapshotStatus)
 
@@ -216,7 +216,7 @@ func TestFullNodeControl_ConfirmPodRestoration(t *testing.T) {
 		var reader mockReader
 		reader.Getter = func(_ context.Context, key client.ObjectKey, obj client.Object, _ ...client.GetOption) error {
 			obj.(*cosmosv1.CosmosFullNode).Status.ScheduledSnapshotStatus = map[string]cosmosv1.FullNodeSnapshotStatus{
-				"default.snapshot.v1alpha1.cosmos.bharvest.io": {PodCandidate: "target-pod"},
+				"default.snapshot.v1alpha1.cosmos.altuslabsxyz.io": {PodCandidate: "target-pod"},
 			}
 			return nil
 		}

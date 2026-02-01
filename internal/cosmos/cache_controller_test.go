@@ -17,7 +17,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
+	cosmosv1 "github.com/altuslabsxyz/cosmos-operator/api/v1"
 )
 
 type mockCollector struct {

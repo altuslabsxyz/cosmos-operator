@@ -11,8 +11,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
-	"github.com/b-harvest/cosmos-operator/internal/diff"
+	cosmosv1 "github.com/altuslabsxyz/cosmos-operator/api/v1"
+	"github.com/altuslabsxyz/cosmos-operator/internal/diff"
 )
 
 func TestBuildPods(t *testing.T) {
@@ -46,7 +46,7 @@ func TestBuildPods(t *testing.T) {
 		for i, r := range pods {
 			require.Equal(t, int64(i), r.Ordinal(), i)
 			require.NotEmpty(t, r.Revision(), i)
-			require.Equal(t, strconv.Itoa(i), r.Object().Annotations["cosmos.bharvest.io/config-checksum"])
+			require.Equal(t, strconv.Itoa(i), r.Object().Annotations["cosmos.altuslabsxyz.io/config-checksum"])
 		}
 
 		want := lo.Map([]int{0, 1, 2, 3, 4}, func(_ int, i int) string {

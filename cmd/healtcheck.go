@@ -11,8 +11,8 @@ import (
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/b-harvest/cosmos-operator/internal/cosmos"
-	"github.com/b-harvest/cosmos-operator/internal/healthcheck"
+	"github.com/altuslabsxyz/cosmos-operator/internal/cosmos"
+	"github.com/altuslabsxyz/cosmos-operator/internal/healthcheck"
 )
 
 func HealthCheckCmd() *cobra.Command {

@@ -12,7 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	cosmosalpha "github.com/b-harvest/cosmos-operator/api/v1alpha1"
+	cosmosalpha "github.com/altuslabsxyz/cosmos-operator/api/v1alpha1"
 )
 
 func requireOwner(t *testing.T, crd metav1.Object, obj client.Object) {

@@ -9,7 +9,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	cosmosalpha "github.com/b-harvest/cosmos-operator/api/v1alpha1"
+	cosmosalpha "github.com/altuslabsxyz/cosmos-operator/api/v1alpha1"
 )
 
 // CreateClient creates and sets owner reference.

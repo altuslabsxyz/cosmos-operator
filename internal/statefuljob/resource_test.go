@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	cosmosalpha "github.com/b-harvest/cosmos-operator/api/v1alpha1"
+	cosmosalpha "github.com/altuslabsxyz/cosmos-operator/api/v1alpha1"
 )
 
 func TestResourceName(t *testing.T) {

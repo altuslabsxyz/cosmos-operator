@@ -12,10 +12,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
-	"github.com/b-harvest/cosmos-operator/internal/diff"
-	"github.com/b-harvest/cosmos-operator/internal/kube"
-	"github.com/b-harvest/cosmos-operator/internal/test"
+	cosmosv1 "github.com/altuslabsxyz/cosmos-operator/api/v1"
+	"github.com/altuslabsxyz/cosmos-operator/internal/diff"
+	"github.com/altuslabsxyz/cosmos-operator/internal/kube"
+	"github.com/altuslabsxyz/cosmos-operator/internal/test"
 )
 
 var nopReporter test.NopReporter

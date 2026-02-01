@@ -1,4 +1,4 @@
-apiVersion: cosmos.bharvest.io/v1alpha1
+apiVersion: cosmos.altuslabsxyz.io/v1alpha1
 kind: StatefulJob
 metadata:
   name: statefuljob-sample

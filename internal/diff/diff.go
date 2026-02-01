@@ -7,7 +7,7 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/b-harvest/cosmos-operator/internal/kube"
+	"github.com/altuslabsxyz/cosmos-operator/internal/kube"
 )
 
 const revisionLabel = "app.kubernetes.io/revision"

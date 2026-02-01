@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/b-harvest/cosmos-operator/internal/kube"
+	"github.com/altuslabsxyz/cosmos-operator/internal/kube"
 )
 
 type mockStatuser func(ctx context.Context, rpcHost string) (CometStatus, error)

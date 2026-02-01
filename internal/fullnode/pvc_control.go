@@ -12,9 +12,9 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
-	"github.com/b-harvest/cosmos-operator/internal/diff"
-	"github.com/b-harvest/cosmos-operator/internal/kube"
+	cosmosv1 "github.com/altuslabsxyz/cosmos-operator/api/v1"
+	"github.com/altuslabsxyz/cosmos-operator/internal/diff"
+	"github.com/altuslabsxyz/cosmos-operator/internal/kube"
 )
 
 // PVCControl reconciles volumes for a CosmosFullNode.

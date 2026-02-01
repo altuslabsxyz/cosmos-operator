@@ -11,8 +11,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
-	"github.com/b-harvest/cosmos-operator/internal/test"
+	cosmosv1 "github.com/altuslabsxyz/cosmos-operator/api/v1"
+	"github.com/altuslabsxyz/cosmos-operator/internal/test"
 )
 
 var (
@@ -62,8 +62,8 @@ func TestBuildConfigMaps(t *testing.T) {
 			"app.kubernetes.io/name":       "agoric",
 			"app.kubernetes.io/instance":   "agoric-0",
 			"app.kubernetes.io/version":    "v6.0.0",
-			"cosmos.bharvest.io/network":   "testnet",
-			"cosmos.bharvest.io/type":      "FullNode",
+			"cosmos.altuslabsxyz.io/network":   "testnet",
+			"cosmos.altuslabsxyz.io/type":      "FullNode",
 		}
 		require.Empty(t, cm.Annotations)
 

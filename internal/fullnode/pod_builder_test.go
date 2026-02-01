@@ -11,9 +11,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
-	"github.com/b-harvest/cosmos-operator/internal/kube"
-	"github.com/b-harvest/cosmos-operator/internal/test"
+	cosmosv1 "github.com/altuslabsxyz/cosmos-operator/api/v1"
+	"github.com/altuslabsxyz/cosmos-operator/internal/kube"
+	"github.com/altuslabsxyz/cosmos-operator/internal/test"
 )
 
 func defaultCRD() cosmosv1.CosmosFullNode {
@@ -71,8 +71,8 @@ func TestPodBuilder(t *testing.T) {
 			"app.kubernetes.io/created-by": "cosmos-operator",
 			"app.kubernetes.io/name":       "osmosis",
 			"app.kubernetes.io/version":    "v1.2.3",
-			"cosmos.bharvest.io/network":   "mainnet",
-			"cosmos.bharvest.io/type":      "FullNode",
+			"cosmos.altuslabsxyz.io/network":   "mainnet",
+			"cosmos.altuslabsxyz.io/type":      "FullNode",
 		}
 		require.Equal(t, wantLabels, pod.Labels)
 		require.NotNil(t, pod.Annotations)
@@ -261,7 +261,7 @@ func TestPodBuilder(t *testing.T) {
 
 		healthContainer := pod.Spec.Containers[1]
 		require.Equal(t, "healthcheck", healthContainer.Name)
-		require.Equal(t, "ghcr.io/b-harvest/cosmos-operator:latest", healthContainer.Image)
+		require.Equal(t, "ghcr.io/altuslabsxyz/cosmos-operator:latest", healthContainer.Image)
 		require.Equal(t, []string{"/manager", "healthcheck"}, healthContainer.Command)
 		require.Empty(t, healthContainer.Args)
 		require.Empty(t, healthContainer.ImagePullPolicy)
@@ -282,7 +282,7 @@ func TestPodBuilder(t *testing.T) {
 			"ghcr.io/qj0r9j0vc2/infra-toolkit:latest",
 			"ghcr.io/qj0r9j0vc2/infra-toolkit:latest",
 			"ghcr.io/qj0r9j0vc2/infra-toolkit:latest",
-			"ghcr.io/b-harvest/cosmos-operator:latest",
+			"ghcr.io/altuslabsxyz/cosmos-operator:latest",
 		}
 		require.Equal(t, wantInitImages, lo.Map(pod.Spec.InitContainers, func(c corev1.Container, _ int) string {
 			return c.Image

@@ -4,12 +4,12 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
-	"github.com/b-harvest/cosmos-operator/internal/diff"
+	cosmosv1 "github.com/altuslabsxyz/cosmos-operator/api/v1"
+	"github.com/altuslabsxyz/cosmos-operator/internal/diff"
 )
 
 const (
-	configChecksumAnnotation = "cosmos.bharvest.io/config-checksum"
+	configChecksumAnnotation = "cosmos.altuslabsxyz.io/config-checksum"
 )
 
 // BuildPods creates the final state of pods given the crd.

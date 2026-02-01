@@ -138,7 +138,7 @@ linters-settings:
     sections:
       - standard
       - default
-      - prefix(github.com/b-harvest/cosmos-operator)
+      - prefix(github.com/altuslabsxyz/cosmos-operator)
     skip-generated: true
 
 issues:

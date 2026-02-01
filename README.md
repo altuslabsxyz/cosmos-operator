@@ -1,14 +1,14 @@
 # Cosmos Operator
 
-[![CI](https://github.com/b-harvest/cosmos-operator/actions/workflows/ci.yml/badge.svg)](https://github.com/b-harvest/cosmos-operator/actions/workflows/ci.yml)
-[![Docker Build](https://github.com/b-harvest/cosmos-operator/actions/workflows/docker-build.yml/badge.svg)](https://github.com/b-harvest/cosmos-operator/actions/workflows/docker-build.yml)
-[![Security](https://github.com/b-harvest/cosmos-operator/actions/workflows/security.yml/badge.svg)](https://github.com/b-harvest/cosmos-operator/actions/workflows/security.yml)
-[![Go Report Card](https://goreportcard.com/badge/github.com/b-harvest/cosmos-operator)](https://goreportcard.com/report/github.com/b-harvest/cosmos-operator)
-[![GoDoc](https://pkg.go.dev/badge/github.com/b-harvest/cosmos-operator)](https://pkg.go.dev/github.com/b-harvest/cosmos-operator)
-[![License](https://img.shields.io/github/license/b-harvest/cosmos-operator.svg)](https://github.com/b-harvest/cosmos-operator/blob/main/LICENSE)
-[![Release](https://img.shields.io/github/v/release/b-harvest/cosmos-operator.svg)](https://github.com/b-harvest/cosmos-operator/releases/latest)
+[![CI](https://github.com/altuslabsxyz/cosmos-operator/actions/workflows/ci.yml/badge.svg)](https://github.com/altuslabsxyz/cosmos-operator/actions/workflows/ci.yml)
+[![Docker Build](https://github.com/altuslabsxyz/cosmos-operator/actions/workflows/docker-build.yml/badge.svg)](https://github.com/altuslabsxyz/cosmos-operator/actions/workflows/docker-build.yml)
+[![Security](https://github.com/altuslabsxyz/cosmos-operator/actions/workflows/security.yml/badge.svg)](https://github.com/altuslabsxyz/cosmos-operator/actions/workflows/security.yml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/altuslabsxyz/cosmos-operator)](https://goreportcard.com/report/github.com/altuslabsxyz/cosmos-operator)
+[![GoDoc](https://pkg.go.dev/badge/github.com/altuslabsxyz/cosmos-operator)](https://pkg.go.dev/github.com/altuslabsxyz/cosmos-operator)
+[![License](https://img.shields.io/github/license/altuslabsxyz/cosmos-operator.svg)](https://github.com/altuslabsxyz/cosmos-operator/blob/main/LICENSE)
+[![Release](https://img.shields.io/github/v/release/altuslabsxyz/cosmos-operator.svg)](https://github.com/altuslabsxyz/cosmos-operator/releases/latest)
 
-> **Note**: This is an actively maintained fork of [strangelove-ventures/cosmos-operator](https://github.com/strangelove-ventures/cosmos-operator) with additional production features and enhancements by [B-Harvest](https://bharvest.io).
+> **Note**: This is an actively maintained fork of [strangelove-ventures/cosmos-operator](https://github.com/strangelove-ventures/cosmos-operator) with additional production features and enhancements by [B-Harvest](https://altuslabsxyz.io).
 
 ## Enhanced Features
 

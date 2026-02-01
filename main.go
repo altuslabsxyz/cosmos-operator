@@ -38,13 +38,13 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 
-	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
-	cosmosv1alpha1 "github.com/b-harvest/cosmos-operator/api/v1alpha1"
-	opcmd "github.com/b-harvest/cosmos-operator/cmd"
-	"github.com/b-harvest/cosmos-operator/controllers"
-	"github.com/b-harvest/cosmos-operator/internal/cosmos"
-	"github.com/b-harvest/cosmos-operator/internal/fullnode"
-	"github.com/b-harvest/cosmos-operator/internal/version"
+	cosmosv1 "github.com/altuslabsxyz/cosmos-operator/api/v1"
+	cosmosv1alpha1 "github.com/altuslabsxyz/cosmos-operator/api/v1alpha1"
+	opcmd "github.com/altuslabsxyz/cosmos-operator/cmd"
+	"github.com/altuslabsxyz/cosmos-operator/controllers"
+	"github.com/altuslabsxyz/cosmos-operator/internal/cosmos"
+	"github.com/altuslabsxyz/cosmos-operator/internal/fullnode"
+	"github.com/altuslabsxyz/cosmos-operator/internal/version"
 )
 
 var (

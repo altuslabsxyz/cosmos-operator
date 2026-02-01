@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
+	cosmosv1 "github.com/altuslabsxyz/cosmos-operator/api/v1"
 )
 
 var (

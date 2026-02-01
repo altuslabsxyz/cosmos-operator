@@ -14,12 +14,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	cosmosalpha "github.com/b-harvest/cosmos-operator/api/v1alpha1"
-	"github.com/b-harvest/cosmos-operator/internal/fullnode"
-	"github.com/b-harvest/cosmos-operator/internal/kube"
+	cosmosalpha "github.com/altuslabsxyz/cosmos-operator/api/v1alpha1"
+	"github.com/altuslabsxyz/cosmos-operator/internal/fullnode"
+	"github.com/altuslabsxyz/cosmos-operator/internal/kube"
 )
 
-const cosmosSourceLabel = "cosmos.bharvest.io/source"
+const cosmosSourceLabel = "cosmos.altuslabsxyz.io/source"
 
 // Client is a subset of client.Client.
 type Client interface {

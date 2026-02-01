@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
+	cosmosv1 "github.com/altuslabsxyz/cosmos-operator/api/v1"
 )
 
 func HasTypeLabel(t *testing.T, builder func(crd cosmosv1.CosmosFullNode) []map[string]string) {
@@ -18,7 +18,7 @@ func HasTypeLabel(t *testing.T, builder func(crd cosmosv1.CosmosFullNode) []map[
 				resources := builder(crd)
 
 				for _, resource := range resources {
-					require.Equal(t, "FullNode", resource["cosmos.bharvest.io/type"])
+					require.Equal(t, "FullNode", resource["cosmos.altuslabsxyz.io/type"])
 				}
 			})
 
@@ -27,7 +27,7 @@ func HasTypeLabel(t *testing.T, builder func(crd cosmosv1.CosmosFullNode) []map[
 				resources := builder(crd)
 
 				for _, resource := range resources {
-					require.Equal(t, "Sentry", resource["cosmos.bharvest.io/type"])
+					require.Equal(t, "Sentry", resource["cosmos.altuslabsxyz.io/type"])
 				}
 			})
 
@@ -36,7 +36,7 @@ func HasTypeLabel(t *testing.T, builder func(crd cosmosv1.CosmosFullNode) []map[
 				resources := builder(crd)
 
 				for _, resource := range resources {
-					require.Equal(t, "FullNode", resource["cosmos.bharvest.io/type"])
+					require.Equal(t, "FullNode", resource["cosmos.altuslabsxyz.io/type"])
 				}
 			})
 		})

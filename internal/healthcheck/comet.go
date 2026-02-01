@@ -12,7 +12,7 @@ import (
 
 	"github.com/go-logr/logr"
 
-	"github.com/b-harvest/cosmos-operator/internal/cosmos"
+	"github.com/altuslabsxyz/cosmos-operator/internal/cosmos"
 )
 
 // Stature can query the Comet status endpoint.

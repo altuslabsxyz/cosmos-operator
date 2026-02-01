@@ -12,7 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
+	cosmosv1 "github.com/altuslabsxyz/cosmos-operator/api/v1"
 )
 
 type mockClient[T client.Object] struct {
