@@ -18,7 +18,7 @@ require (
 	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.11.1
 	go.uber.org/goleak v1.3.0
-	go.uber.org/zap v1.27.0
+	go.uber.org/zap v1.27.1
 	golang.org/x/exp v0.0.0-20250506013437-ce4c2cf36ca6
 	golang.org/x/sync v0.18.0
 	gopkg.in/inf.v0 v0.9.1
