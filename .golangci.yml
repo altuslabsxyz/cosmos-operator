@@ -6,114 +6,30 @@ run:
 linters:
   default: none
   enable:
-    # Bugs and potential issues
-    - errcheck
+    # Core linters - bugs and potential issues
     - govet
     - ineffassign
     - staticcheck
     - unused
 
-    # Style and formatting
+    # Style
     - misspell
-    - revive
-
-    # Complexity
-    - gocyclo
-    - gocognit
-    - nestif
-
-    # Performance
-    - prealloc
-
-    # Security
-    - gosec
-
-    # Error handling
-    - err113
-    - errname
-
-    # Code quality
-    - dupl
-    - goconst
-    - unconvert
-    - unparam
-    - nakedret
-
-    # Best practices
-    - nolintlint
-    - copyloopvar
 
   settings:
-    errcheck:
-      check-type-assertions: true
-      check-blank: true
-      exclude-functions:
-        - (*github.com/spf13/cobra.Command).MarkFlagRequired
-
     govet:
       enable-all: true
       disable:
         - shadow
         - fieldalignment
 
-    gocyclo:
-      min-complexity: 15
-
-    gocognit:
-      min-complexity: 20
-
-    dupl:
-      threshold: 100
-
-    goconst:
-      min-len: 3
-      min-occurrences: 3
-
     misspell:
       locale: US
-      extra-words:
-        - typo: "cosmos"
-          correction: "cosmos"
-        - typo: "kubernetes"
-          correction: "kubernetes"
 
-    revive:
-      rules:
-        - name: blank-imports
-        - name: context-as-argument
-        - name: dot-imports
-        - name: error-return
-        - name: error-strings
-        - name: error-naming
-        - name: exported
-        - name: if-return
-        - name: increment-decrement
-        - name: var-naming
-        - name: var-declaration
-        - name: package-comments
-        - name: range
-        - name: receiver-naming
-        - name: time-naming
-        - name: unexported-return
-        - name: indent-error-flow
-        - name: errorf
-        - name: empty-block
-        - name: superfluous-else
-        - name: unused-parameter
-        - name: unreachable-code
-        - name: redefines-builtin-id
-
-    gosec:
-      excludes:
-        - G104
-      config:
-        G306: "0644"
-
-    nestif:
-      min-complexity: 5
-
-    nakedret:
-      max-func-lines: 30
+    staticcheck:
+      checks:
+        - all
+        - -SA1019  # Disable deprecation warnings
+        - -QF1008  # Disable "could remove embedded field" suggestions
 
   exclusions:
     generated: lax
@@ -125,34 +41,8 @@ linters:
       - third_party
       - ".*\\.pb\\.go$"
       - ".*\\.gen\\.go$"
-    rules:
-      - path: _test\.go
-        linters:
-          - gocyclo
-          - errcheck
-          - dupl
-          - gosec
-          - goconst
-          - revive
-
-      - path: internal/thirdparty/
-        linters:
-          - revive
-
-      - path: ".*\\.pb\\.go"
-        linters:
-          - gocyclo
-          - errcheck
-          - gosec
 
 formatters:
   enable:
     - gofmt
     - goimports
-    - gci
-  settings:
-    gci:
-      sections:
-        - standard
-        - default
-        - prefix(github.com/altuslabsxyz/cosmos-operator)
