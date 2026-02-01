@@ -1,18 +1,18 @@
+version: "2"
+
 run:
   timeout: 10m
   issues-exit-code: 1
   tests: true
-  skip-dirs:
+  exclude-dirs:
     - vendor
     - third_party
-  skip-files:
+  exclude-files:
     - ".*\\.pb\\.go$"
     - ".*\\.gen\\.go$"
-  modules-download-mode: readonly
   allow-parallel-runners: true
 
 output:
-  format: colored-line-number
   print-issued-lines: true
   print-linter-name: true
   uniq-by-line: true
@@ -48,7 +48,7 @@ linters:
     - gosec            # Security issues
 
     # Error handling
-    - goerr113         # Error handling
+    - err113           # Error handling (renamed from goerr113 in v2)
     - errname          # Error naming conventions
 
     # Code quality
@@ -60,7 +60,7 @@ linters:
 
     # Best practices
     - nolintlint       # Reports ill-formed or insufficient nolint directives
-    - copyloopvar      # Detects places where loop variables are copied (replaces deprecated exportloopref)
+    - copyloopvar      # Detects places where loop variables are copied
     - gci              # Imports order
 
 linters-settings:
