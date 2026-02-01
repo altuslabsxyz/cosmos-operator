@@ -14,7 +14,7 @@ require (
 	github.com/pkg/profile v1.7.0
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/samber/lo v1.38.1
-	github.com/spf13/cobra v1.10.0
+	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.11.1
 	go.uber.org/goleak v1.3.0
