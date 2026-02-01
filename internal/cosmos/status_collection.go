@@ -9,7 +9,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/b-harvest/cosmos-operator/internal/kube"
+	"github.com/altuslabsxyz/cosmos-operator/internal/kube"
 )
 
 // StatusItem is a pod paired with its CometBFT status.

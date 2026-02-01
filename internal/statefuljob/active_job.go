@@ -6,8 +6,8 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	cosmosalpha "github.com/b-harvest/cosmos-operator/api/v1alpha1"
-	"github.com/b-harvest/cosmos-operator/internal/kube"
+	cosmosalpha "github.com/altuslabsxyz/cosmos-operator/api/v1alpha1"
+	"github.com/altuslabsxyz/cosmos-operator/internal/kube"
 )
 
 type Getter interface {

@@ -164,7 +164,7 @@ jobs:
           GOARCH: ${{ matrix.arch }}
           CGO_ENABLED: 0
         run: |
-          go build -tags pebbledb -ldflags "-X github.com/b-harvest/cosmos-operator/internal/version.version=dev-${{ github.sha }}" -o manager-${{ matrix.os }}-${{ matrix.arch }} .
+          go build -tags pebbledb -ldflags "-X github.com/altuslabsxyz/cosmos-operator/internal/version.version=dev-${{ github.sha }}" -o manager-${{ matrix.os }}-${{ matrix.arch }} .
 
       - name: Upload binary artifact
         uses: actions/upload-artifact@v4

@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 
-	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
-	"github.com/b-harvest/cosmos-operator/internal/test"
+	cosmosv1 "github.com/altuslabsxyz/cosmos-operator/api/v1"
+	"github.com/altuslabsxyz/cosmos-operator/internal/test"
 )
 
 func TestBuildNodeKeySecrets(t *testing.T) {
@@ -42,8 +42,8 @@ func TestBuildNodeKeySecrets(t *testing.T) {
 				"app.kubernetes.io/name":       "juno",
 				"app.kubernetes.io/instance":   fmt.Sprintf("juno-%d", i),
 				"app.kubernetes.io/version":    "v1.2.3",
-				"cosmos.bharvest.io/network":   "mainnet",
-				"cosmos.bharvest.io/type":      "FullNode",
+				"cosmos.altuslabsxyz.io/network":   "mainnet",
+				"cosmos.altuslabsxyz.io/type":      "FullNode",
 			}
 			require.Equal(t, wantLabels, got.Labels)
 

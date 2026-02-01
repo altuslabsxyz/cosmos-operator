@@ -28,13 +28,13 @@ ARG BUILD_DATE
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
     go build \
     -tags pebbledb \
-    -ldflags "-s -w -X github.com/b-harvest/cosmos-operator/internal/version.version=${VERSION}" \
+    -ldflags "-s -w -X github.com/altuslabsxyz/cosmos-operator/internal/version.version=${VERSION}" \
     -a -o manager .
 
 # Build final image from scratch
 FROM scratch
 
-LABEL org.opencontainers.image.source=https://github.com/b-harvest/cosmos-operator
+LABEL org.opencontainers.image.source=https://github.com/altuslabsxyz/cosmos-operator
 
 WORKDIR /
 COPY --from=builder /workspace/manager .

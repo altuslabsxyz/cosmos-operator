@@ -32,10 +32,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
-	"github.com/b-harvest/cosmos-operator/internal/cosmos"
-	"github.com/b-harvest/cosmos-operator/internal/fullnode"
-	"github.com/b-harvest/cosmos-operator/internal/kube"
+	cosmosv1 "github.com/altuslabsxyz/cosmos-operator/api/v1"
+	"github.com/altuslabsxyz/cosmos-operator/internal/cosmos"
+	"github.com/altuslabsxyz/cosmos-operator/internal/fullnode"
+	"github.com/altuslabsxyz/cosmos-operator/internal/kube"
 )
 
 const controllerOwnerField = ".metadata.controller"
@@ -88,9 +88,9 @@ var (
 	requeueResult = ctrl.Result{RequeueAfter: 3 * time.Second}
 )
 
-//+kubebuilder:rbac:groups=cosmos.bharvest.io,resources=cosmosfullnodes,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=cosmos.bharvest.io,resources=cosmosfullnodes/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=cosmos.bharvest.io,resources=cosmosfullnodes/finalizers,verbs=update
+//+kubebuilder:rbac:groups=cosmos.altuslabsxyz.io,resources=cosmosfullnodes,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=cosmos.altuslabsxyz.io,resources=cosmosfullnodes/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=cosmos.altuslabsxyz.io,resources=cosmosfullnodes/finalizers,verbs=update
 // Generate RBAC roles to watch and update resources. IMPORTANT!!!! All resource names must be lowercase or cluster role will not work.
 //+kubebuilder:rbac:groups="",resources=pods;persistentvolumeclaims;services;serviceaccounts;configmaps,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups="rbac.authorization.k8s.io",resources=roles;rolebindings,verbs=get;list;watch;create;update;patch;delete;bind;escalate

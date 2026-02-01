@@ -27,7 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
+	cosmosv1 "github.com/altuslabsxyz/cosmos-operator/api/v1"
 )
 
 const (
@@ -406,9 +406,9 @@ func (m *DeepRecoveryManager) createVolumeSnapshot(
 			Namespace: crd.Namespace,
 			Labels: map[string]string{
 				"app.kubernetes.io/managed-by": "cosmos-operator",
-				"cosmos.bharvest.io/recovery":  crd.Name,
-				"cosmos.bharvest.io/pod":       pod.PodName,
-				"cosmos.bharvest.io/type":      "deep-recovery-backup",
+				"cosmos.altuslabsxyz.io/recovery":  crd.Name,
+				"cosmos.altuslabsxyz.io/pod":       pod.PodName,
+				"cosmos.altuslabsxyz.io/type":      "deep-recovery-backup",
 			},
 		},
 		Spec: snapshotv1.VolumeSnapshotSpec{
@@ -466,9 +466,9 @@ func (m *DeepRecoveryManager) createRecoveryPod(
 			Namespace: crd.Namespace,
 			Labels: map[string]string{
 				"app.kubernetes.io/managed-by": "cosmos-operator",
-				"cosmos.bharvest.io/recovery":  crd.Name,
-				"cosmos.bharvest.io/pod":       podInfo.PodName,
-				"cosmos.bharvest.io/type":      "recovery-pod",
+				"cosmos.altuslabsxyz.io/recovery":  crd.Name,
+				"cosmos.altuslabsxyz.io/pod":       podInfo.PodName,
+				"cosmos.altuslabsxyz.io/type":      "recovery-pod",
 			},
 		},
 		Spec: corev1.PodSpec{
@@ -590,9 +590,9 @@ func (m *DeepRecoveryManager) cleanupOldSnapshots(
 	if err := m.client.List(ctx, snapshots,
 		client.InNamespace(crd.Namespace),
 		client.MatchingLabels{
-			"cosmos.bharvest.io/recovery": crd.Name,
-			"cosmos.bharvest.io/pod":      podName,
-			"cosmos.bharvest.io/type":     "deep-recovery-backup",
+			"cosmos.altuslabsxyz.io/recovery": crd.Name,
+			"cosmos.altuslabsxyz.io/pod":      podName,
+			"cosmos.altuslabsxyz.io/type":     "deep-recovery-backup",
 		},
 	); err != nil {
 		return err

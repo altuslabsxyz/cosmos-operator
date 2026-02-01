@@ -16,10 +16,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
-	cosmosalpha "github.com/b-harvest/cosmos-operator/api/v1alpha1"
-	"github.com/b-harvest/cosmos-operator/internal/fullnode"
-	"github.com/b-harvest/cosmos-operator/internal/kube"
+	cosmosv1 "github.com/altuslabsxyz/cosmos-operator/api/v1"
+	cosmosalpha "github.com/altuslabsxyz/cosmos-operator/api/v1alpha1"
+	"github.com/altuslabsxyz/cosmos-operator/internal/fullnode"
+	"github.com/altuslabsxyz/cosmos-operator/internal/kube"
 )
 
 type mockPodClient struct {
@@ -289,7 +289,7 @@ func TestVolumeSnapshotControl_CreateSnapshot(t *testing.T) {
 			"test":                      "labels",
 			kube.ControllerLabel:        "cosmos-operator",
 			kube.ComponentLabel:         "ScheduledVolumeSnapshot",
-			"cosmos.bharvest.io/source": "my-snapshot",
+			"cosmos.altuslabsxyz.io/source": "my-snapshot",
 		}
 		require.Equal(t, wantLabels, got.Labels)
 
@@ -416,7 +416,7 @@ func TestVolumeSnapshotControl_DeleteOldSnapshots(t *testing.T) {
 		}
 		require.Zero(t, listOpt.Limit)
 		require.Equal(t, "default", listOpt.Namespace)
-		require.Equal(t, "cosmos.bharvest.io/source=agoric", listOpt.LabelSelector.String())
+		require.Equal(t, "cosmos.altuslabsxyz.io/source=agoric", listOpt.LabelSelector.String())
 
 		require.EqualValues(t, additional, len(mClient.DeletedObjs))
 

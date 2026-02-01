@@ -107,8 +107,8 @@ jobs:
 
             ## Resources
 
-            - [Contributing Guide](https://github.com/b-harvest/cosmos-operator/blob/main/CONTRIBUTING.md)
-            - [Development Setup](https://github.com/b-harvest/cosmos-operator/blob/main/docs/development.md)
+            - [Contributing Guide](https://github.com/altuslabsxyz/cosmos-operator/blob/main/CONTRIBUTING.md)
+            - [Development Setup](https://github.com/altuslabsxyz/cosmos-operator/blob/main/docs/development.md)
             `;
 
             github.rest.issues.createComment({

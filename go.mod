@@ -1,4 +1,4 @@
-module github.com/b-harvest/cosmos-operator
+module github.com/altuslabsxyz/cosmos-operator
 
 go 1.24.0
 

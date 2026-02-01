@@ -12,7 +12,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/stretchr/testify/require"
 
-	"github.com/b-harvest/cosmos-operator/internal/cosmos"
+	"github.com/altuslabsxyz/cosmos-operator/internal/cosmos"
 )
 
 type mockClient func(ctx context.Context, rpcHost string) (cosmos.CometStatus, error)

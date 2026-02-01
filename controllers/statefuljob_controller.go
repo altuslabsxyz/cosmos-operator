@@ -34,9 +34,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	cosmosalpha "github.com/b-harvest/cosmos-operator/api/v1alpha1"
-	"github.com/b-harvest/cosmos-operator/internal/kube"
-	"github.com/b-harvest/cosmos-operator/internal/statefuljob"
+	cosmosalpha "github.com/altuslabsxyz/cosmos-operator/api/v1alpha1"
+	"github.com/altuslabsxyz/cosmos-operator/internal/kube"
+	"github.com/altuslabsxyz/cosmos-operator/internal/statefuljob"
 )
 
 var errMissingVolSnapCRD = errors.New("cluster does not have VolumeSnapshot CRDs installed")
@@ -77,9 +77,9 @@ func NewStatefulJob(client client.Client, recorder record.EventRecorder, missing
 
 var requeueStatefulJob = ctrl.Result{RequeueAfter: 60 * time.Second}
 
-//+kubebuilder:rbac:groups=cosmos.bharvest.io,resources=statefuljobs,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=cosmos.bharvest.io,resources=statefuljobs/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=cosmos.bharvest.io,resources=statefuljobs/finalizers,verbs=update
+//+kubebuilder:rbac:groups=cosmos.altuslabsxyz.io,resources=statefuljobs,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=cosmos.altuslabsxyz.io,resources=statefuljobs/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=cosmos.altuslabsxyz.io,resources=statefuljobs/finalizers,verbs=update
 //+kubebuilder:rbac:groups=snapshot.storage.k8s.io,resources=volumesnapshots,verbs=get;list;watch
 //+kubebuilder:rbac:groups="",resources=persistentvolumeclaims,verbs=get;list;watch;create;delete
 //+kubebuilder:rbac:groups="batch",resources=jobs,verbs=get;list;watch;create

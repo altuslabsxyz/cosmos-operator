@@ -1,6 +1,6 @@
 
 # Image URL to use all building/pushing image targets
-IMG ?= ghcr.io/b-harvest/cosmos-operator:latest
+IMG ?= ghcr.io/altuslabsxyz/cosmos-operator:latest
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.24.1
 
@@ -87,7 +87,7 @@ build: generate ## Build manager binary.
 run: manifests generate ## Run a controller from your host.
 	go run . --log-level=debug
 
-PRE_IMG ?= ghcr.io/b-harvest/cosmos-operator:dev$(shell git describe --always --dirty)
+PRE_IMG ?= ghcr.io/altuslabsxyz/cosmos-operator:dev$(shell git describe --always --dirty)
 .PHONY: docker-prerelease
 docker-prerelease: ## Build and push a prerelease docker image.
 	IMG=$(PRE_IMG) $(MAKE) docker-build docker-push
@@ -120,7 +120,7 @@ deploy-prerelease: install docker-prerelease ## Install CRDs, build docker image
 	cd config/manager && $(KUSTOMIZE) edit set image controller=$(PRE_IMG)
 	$(KUSTOMIZE) build config/default | kubectl apply -f -
 	@#Hack to reset tag to avoid git thrashing.
-	@cd config/manager && $(KUSTOMIZE) edit set image controller=ghcr.io/b-harvest/cosmos-operator:latest
+	@cd config/manager && $(KUSTOMIZE) edit set image controller=ghcr.io/altuslabsxyz/cosmos-operator:latest
 
 .PHONY: deploy
 deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.

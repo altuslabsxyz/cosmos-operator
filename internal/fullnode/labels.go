@@ -4,13 +4,13 @@ import (
 	"errors"
 	"fmt"
 
-	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
-	"github.com/b-harvest/cosmos-operator/internal/kube"
+	cosmosv1 "github.com/altuslabsxyz/cosmos-operator/api/v1"
+	"github.com/altuslabsxyz/cosmos-operator/internal/kube"
 )
 
 const (
-	networkLabel = "cosmos.bharvest.io/network"
-	typeLabel    = "cosmos.bharvest.io/type"
+	networkLabel = "cosmos.altuslabsxyz.io/network"
+	typeLabel    = "cosmos.altuslabsxyz.io/type"
 )
 
 // kv is a list of extra kv pairs to add to the labels. Must be even.

@@ -10,10 +10,10 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	cosmosv1 "github.com/b-harvest/cosmos-operator/api/v1"
-	"github.com/b-harvest/cosmos-operator/internal/diff"
-	"github.com/b-harvest/cosmos-operator/internal/kube"
-	"github.com/b-harvest/cosmos-operator/internal/test"
+	cosmosv1 "github.com/altuslabsxyz/cosmos-operator/api/v1"
+	"github.com/altuslabsxyz/cosmos-operator/internal/diff"
+	"github.com/altuslabsxyz/cosmos-operator/internal/kube"
+	"github.com/altuslabsxyz/cosmos-operator/internal/test"
 )
 
 func TestBuildServices(t *testing.T) {
@@ -42,8 +42,8 @@ func TestBuildServices(t *testing.T) {
 				"app.kubernetes.io/component":  "p2p",
 				"app.kubernetes.io/version":    "v6.0.0",
 				"app.kubernetes.io/instance":   fmt.Sprintf("terra-%d", i),
-				"cosmos.bharvest.io/network":   "testnet",
-				"cosmos.bharvest.io/type":      "FullNode",
+				"cosmos.altuslabsxyz.io/network":   "testnet",
+				"cosmos.altuslabsxyz.io/type":      "FullNode",
 			}
 			require.Equal(t, wantLabels, p2p.Labels)
 
@@ -187,8 +187,8 @@ func TestBuildServices(t *testing.T) {
 			"app.kubernetes.io/name":       "terra",
 			"app.kubernetes.io/component":  "rpc",
 			"app.kubernetes.io/version":    "v6.0.0",
-			"cosmos.bharvest.io/network":   "testnet",
-			"cosmos.bharvest.io/type":      "FullNode",
+			"cosmos.altuslabsxyz.io/network":   "testnet",
+			"cosmos.altuslabsxyz.io/type":      "FullNode",
 		}
 		require.Equal(t, wantLabels, rpc.Labels)
 
