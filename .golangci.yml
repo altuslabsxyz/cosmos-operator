@@ -28,7 +28,6 @@ linters:
     - ineffassign      # Detect ineffectual assignments
     - staticcheck      # Advanced Go linting
     - unused           # Find unused code
-    - typecheck        # Type checking
 
     # Style and formatting
     - gofmt            # Check formatting
