@@ -45,7 +45,6 @@ linters:
     # Best practices
     - nolintlint
     - copyloopvar
-    - gci
 
   settings:
     errcheck:
@@ -72,7 +71,6 @@ linters:
     goconst:
       min-len: 3
       min-occurrences: 3
-      ignore-tests: true
 
     misspell:
       locale: US
@@ -120,12 +118,6 @@ linters:
     nakedret:
       max-func-lines: 30
 
-    gci:
-      sections:
-        - standard
-        - default
-        - prefix(github.com/altuslabsxyz/cosmos-operator)
-
   exclusions:
     generated: lax
     presets:
@@ -160,3 +152,10 @@ formatters:
   enable:
     - gofmt
     - goimports
+    - gci
+  settings:
+    gci:
+      sections:
+        - standard
+        - default
+        - prefix(github.com/altuslabsxyz/cosmos-operator)
