@@ -28,6 +28,41 @@ type CacheInvalidator interface {
 	Invalidate(controller client.ObjectKey, pods []string)
 }
 
+// isPodReadyForRollout returns true if the pod is fully ready for rollout purposes.
+// This is stricter than kube.IsPodReady() which only checks the Ready condition.
+//
+// For rollout calculations, we need to ensure:
+// 1. Pod is in Running phase (not Pending/Failed/Succeeded/Unknown)
+// 2. All init containers have completed successfully (prevents counting pods where
+//    version-check or other init containers are still running)
+// 3. K8s Ready condition is True (readiness probe passing)
+//
+// Note: Pods without init containers will pass check #2 (empty slice iteration).
+// This is correct behavior - those pods don't have init container prerequisites.
+func isPodReadyForRollout(pod *corev1.Pod) bool {
+	// Check if pod is running
+	if pod.Status.Phase != corev1.PodRunning {
+		return false
+	}
+
+	// Check if all init containers have completed successfully.
+	// Pods without init containers pass this check (empty InitContainerStatuses).
+	for _, cs := range pod.Status.InitContainerStatuses {
+		if cs.State.Terminated == nil || cs.State.Terminated.ExitCode != 0 {
+			return false
+		}
+	}
+
+	// Check K8s Ready condition
+	for _, cond := range pod.Status.Conditions {
+		if cond.Type == corev1.PodReady {
+			return cond.Status == corev1.ConditionTrue
+		}
+	}
+
+	return false
+}
+
 // PodControl reconciles pods for a CosmosFullNode.
 type PodControl struct {
 	client           Client
@@ -119,13 +154,20 @@ func (pc PodControl) Reconcile(
 				continue
 			}
 
+			// Check if pod is actually ready for rollout (init containers completed, readiness probe passing)
+			podReady := isPodReadyForRollout(&existing)
+
 			var rpcReachable bool
 			if ps, ok := syncInfo[podName]; ok {
-				if ps.InSync != nil && *ps.InSync {
+				// Only count as in-sync if both K8s says ready AND RPC reports in-sync
+				if podReady && ps.InSync != nil && *ps.InSync {
 					inSyncPods++
+				} else {
+					reporter.Debug("Pod not counted as in-sync", "pod", podName, "podReady", podReady, "inSync", ps.InSync)
 				}
 				rpcReachable = ps.Error == nil
-				if rpcReachable {
+				// Only count as RPC reachable if K8s pod is also ready
+				if podReady && rpcReachable {
 					rpcReachablePods++
 				}
 			}
