@@ -18,6 +18,32 @@ import (
 
 type mockPodClient struct{ mockClient[*corev1.Pod] }
 
+// setPodsReady sets pods to K8s Ready state (Running phase, init containers completed, Ready condition true)
+func setPodsReady(pods []*corev1.Pod) {
+	for _, pod := range pods {
+		pod.Status = corev1.PodStatus{
+			Phase: corev1.PodRunning,
+			InitContainerStatuses: []corev1.ContainerStatus{
+				{
+					Name: "chain-init",
+					State: corev1.ContainerState{
+						Terminated: &corev1.ContainerStateTerminated{ExitCode: 0},
+					},
+				},
+				{
+					Name: "version-check",
+					State: corev1.ContainerState{
+						Terminated: &corev1.ContainerStateTerminated{ExitCode: 0},
+					},
+				},
+			},
+			Conditions: []corev1.PodCondition{
+				{Type: corev1.PodReady, Status: corev1.ConditionTrue},
+			},
+		}
+	}
+}
+
 func newMockPodClient(pods []*corev1.Pod) *mockPodClient {
 	return &mockPodClient{
 		mockClient: mockClient[*corev1.Pod]{
@@ -134,7 +160,9 @@ func TestPodControl_Reconcile(t *testing.T) {
 		pods, err := BuildPods(&crd, nil)
 		require.NoError(t, err)
 
-		mClient := newMockPodClient(diff.New(nil, pods).Creates())
+		existing := diff.New(nil, pods).Creates()
+		setPodsReady(existing)
+		mClient := newMockPodClient(existing)
 
 		syncInfo := map[string]*cosmosv1.SyncInfoPodStatus{
 			"hub-0": {InSync: ptr(true)},
@@ -226,6 +254,7 @@ func TestPodControl_Reconcile(t *testing.T) {
 		pods, err := BuildPods(&crd, nil)
 		require.NoError(t, err)
 		existing := diff.New(nil, pods).Creates()
+		setPodsReady(existing)
 
 		mClient := newMockPodClient(existing)
 
@@ -419,6 +448,7 @@ func TestPodControl_Reconcile(t *testing.T) {
 		pods, err := BuildPods(&crd, nil)
 		require.NoError(t, err)
 		existing := diff.New(nil, pods).Creates()
+		setPodsReady(existing)
 
 		mClient := newMockPodClient(existing)
 
@@ -470,11 +500,16 @@ func TestPodControl_Reconcile(t *testing.T) {
 	})
 }
 
-// revision hash must be taken without the revision label and the ordinal annotation.
+// revision hash must be taken without the revision label, the ordinal annotation,
+// and Status (since BuildPods creates pods with empty Status).
 func recalculatePodRevision(pod *corev1.Pod, ordinal int) {
 	delete(pod.Labels, "app.kubernetes.io/revision")
 	delete(pod.Annotations, "app.kubernetes.io/ordinal")
+	// Temporarily clear status to match what BuildPods produces
+	savedStatus := pod.Status
+	pod.Status = corev1.PodStatus{}
 	rev1 := diff.Adapt(pod, ordinal).Revision()
+	pod.Status = savedStatus
 	pod.Labels["app.kubernetes.io/revision"] = rev1
 	pod.Annotations["app.kubernetes.io/ordinal"] = fmt.Sprintf("%d", ordinal)
 }
@@ -483,6 +518,27 @@ func newPodWithNewImage(pod *corev1.Pod) {
 	pod.DeletionTimestamp = nil
 	pod.Spec.Containers[0].Image = "new-image"
 	pod.Spec.InitContainers[1].Image = "new-image"
+	// Set pod to ready state after upgrade
+	pod.Status = corev1.PodStatus{
+		Phase: corev1.PodRunning,
+		InitContainerStatuses: []corev1.ContainerStatus{
+			{
+				Name: "chain-init",
+				State: corev1.ContainerState{
+					Terminated: &corev1.ContainerStateTerminated{ExitCode: 0},
+				},
+			},
+			{
+				Name: "version-check",
+				State: corev1.ContainerState{
+					Terminated: &corev1.ContainerStateTerminated{ExitCode: 0},
+				},
+			},
+		},
+		Conditions: []corev1.PodCondition{
+			{Type: corev1.PodReady, Status: corev1.ConditionTrue},
+		},
+	}
 }
 
 func deletedPod(pod *corev1.Pod) {
@@ -502,4 +558,208 @@ func updatePod(t *testing.T, crdName string, ordinal int, pods []*corev1.Pod, up
 	}
 
 	require.FailNow(t, "pod not found", podName)
+}
+
+func TestIsPodReadyForRollout(t *testing.T) {
+	t.Parallel()
+
+	t.Run("pod is ready when all conditions met", func(t *testing.T) {
+		pod := &corev1.Pod{
+			Status: corev1.PodStatus{
+				Phase: corev1.PodRunning,
+				InitContainerStatuses: []corev1.ContainerStatus{
+					{
+						Name: "version-check",
+						State: corev1.ContainerState{
+							Terminated: &corev1.ContainerStateTerminated{ExitCode: 0},
+						},
+					},
+				},
+				Conditions: []corev1.PodCondition{
+					{Type: corev1.PodReady, Status: corev1.ConditionTrue},
+				},
+			},
+		}
+		require.True(t, isPodReadyForRollout(pod))
+	})
+
+	t.Run("pod is not ready when init container running", func(t *testing.T) {
+		pod := &corev1.Pod{
+			Status: corev1.PodStatus{
+				Phase: corev1.PodRunning,
+				InitContainerStatuses: []corev1.ContainerStatus{
+					{
+						Name: "version-check",
+						State: corev1.ContainerState{
+							Running: &corev1.ContainerStateRunning{},
+						},
+					},
+				},
+				Conditions: []corev1.PodCondition{
+					{Type: corev1.PodReady, Status: corev1.ConditionFalse},
+				},
+			},
+		}
+		require.False(t, isPodReadyForRollout(pod))
+	})
+
+	t.Run("pod is not ready when init container failed", func(t *testing.T) {
+		pod := &corev1.Pod{
+			Status: corev1.PodStatus{
+				Phase: corev1.PodRunning,
+				InitContainerStatuses: []corev1.ContainerStatus{
+					{
+						Name: "version-check",
+						State: corev1.ContainerState{
+							Terminated: &corev1.ContainerStateTerminated{ExitCode: 1},
+						},
+					},
+				},
+				Conditions: []corev1.PodCondition{
+					{Type: corev1.PodReady, Status: corev1.ConditionFalse},
+				},
+			},
+		}
+		require.False(t, isPodReadyForRollout(pod))
+	})
+
+	t.Run("pod is not ready when phase is pending", func(t *testing.T) {
+		pod := &corev1.Pod{
+			Status: corev1.PodStatus{
+				Phase: corev1.PodPending,
+			},
+		}
+		require.False(t, isPodReadyForRollout(pod))
+	})
+
+	t.Run("pod is not ready when Ready condition is false", func(t *testing.T) {
+		pod := &corev1.Pod{
+			Status: corev1.PodStatus{
+				Phase: corev1.PodRunning,
+				InitContainerStatuses: []corev1.ContainerStatus{
+					{
+						Name: "version-check",
+						State: corev1.ContainerState{
+							Terminated: &corev1.ContainerStateTerminated{ExitCode: 0},
+						},
+					},
+				},
+				Conditions: []corev1.PodCondition{
+					{Type: corev1.PodReady, Status: corev1.ConditionFalse},
+				},
+			},
+		}
+		require.False(t, isPodReadyForRollout(pod))
+	})
+
+	t.Run("pod is not ready when no Ready condition exists", func(t *testing.T) {
+		pod := &corev1.Pod{
+			Status: corev1.PodStatus{
+				Phase: corev1.PodRunning,
+				InitContainerStatuses: []corev1.ContainerStatus{
+					{
+						Name: "version-check",
+						State: corev1.ContainerState{
+							Terminated: &corev1.ContainerStateTerminated{ExitCode: 0},
+						},
+					},
+				},
+				Conditions: []corev1.PodCondition{},
+			},
+		}
+		require.False(t, isPodReadyForRollout(pod))
+	})
+
+	t.Run("pod with no init containers is ready when phase and condition are correct", func(t *testing.T) {
+		pod := &corev1.Pod{
+			Status: corev1.PodStatus{
+				Phase:                 corev1.PodRunning,
+				InitContainerStatuses: []corev1.ContainerStatus{}, // No init containers
+				Conditions: []corev1.PodCondition{
+					{Type: corev1.PodReady, Status: corev1.ConditionTrue},
+				},
+			},
+		}
+		require.True(t, isPodReadyForRollout(pod))
+	})
+}
+
+func TestPodControl_Reconcile_InitContainerRunning(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	const namespace = "test"
+
+	t.Run("does not count pod as ready when init container is running", func(t *testing.T) {
+		crd := defaultCRD()
+		crd.Name = "hub"
+		crd.Namespace = namespace
+		crd.Spec.Replicas = 3
+		crd.Spec.RolloutStrategy = cosmosv1.RolloutStrategy{
+			MaxUnavailable: ptr(intstr.FromInt(1)),
+		}
+
+		pods, err := BuildPods(&crd, nil)
+		require.NoError(t, err)
+		existing := diff.New(nil, pods).Creates()
+
+		// Set pod-0 as not ready (init container running)
+		existing[0].Status = corev1.PodStatus{
+			Phase: corev1.PodPending,
+			InitContainerStatuses: []corev1.ContainerStatus{
+				{
+					Name: "version-check",
+					State: corev1.ContainerState{
+						Running: &corev1.ContainerStateRunning{},
+					},
+				},
+			},
+		}
+
+		// Set pod-1 and pod-2 as ready
+		for i := 1; i < 3; i++ {
+			existing[i].Status = corev1.PodStatus{
+				Phase: corev1.PodRunning,
+				InitContainerStatuses: []corev1.ContainerStatus{
+					{
+						Name: "version-check",
+						State: corev1.ContainerState{
+							Terminated: &corev1.ContainerStateTerminated{ExitCode: 0},
+						},
+					},
+				},
+				Conditions: []corev1.PodCondition{
+					{Type: corev1.PodReady, Status: corev1.ConditionTrue},
+				},
+			}
+		}
+
+		mClient := newMockPodClient(existing)
+
+		syncInfo := map[string]*cosmosv1.SyncInfoPodStatus{
+			"hub-0": {InSync: ptr(true)}, // RPC says in sync, but K8s pod not ready
+			"hub-1": {InSync: ptr(true)},
+			"hub-2": {InSync: ptr(true)},
+		}
+
+		control := NewPodControl(mClient, nil)
+
+		control.computeRollout = func(maxUnavail *intstr.IntOrString, desired, ready int) int {
+			require.EqualValues(t, crd.Spec.Replicas, desired)
+			// Only 2 pods should be ready (pod-0 has init container running)
+			require.Equal(t, 2, ready)
+			return kube.ComputeRollout(maxUnavail, desired, ready)
+		}
+
+		// Trigger updates by changing the image
+		crd.Spec.PodTemplate.Image = "new-image"
+		requeue, err := control.Reconcile(ctx, nopReporter, &crd, nil, syncInfo)
+		require.NoError(t, err)
+		require.True(t, requeue)
+
+		// With maxUnavailable=1 and ready=2, we can delete 0 pods
+		// because 2 - 1 = 1 minAvail, ready(2) > minAvail(1), target = 1 - (3-2) = 0
+		// Wait, let's recalculate: unavail=1, minAvail=3-1=2, ready=2, ready<=minAvail, so target=0
+		require.Zero(t, mClient.DeleteCount)
+	})
 }
