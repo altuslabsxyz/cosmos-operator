@@ -8,7 +8,6 @@ linters:
   enable:
     # Bugs and potential issues
     - errcheck
-    - gosimple
     - govet
     - ineffassign
     - staticcheck
