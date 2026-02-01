@@ -39,9 +39,12 @@ func DiskUsage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
+
+	// fs.Bsize is always positive from statfs syscall
+	bsize := uint64(fs.Bsize) // #nosec G115 -- Bsize from statfs is always positive
 	var (
-		all  = fs.Blocks * uint64(fs.Bsize)
-		free = fs.Bfree * uint64(fs.Bsize)
+		all  = fs.Blocks * bsize
+		free = fs.Bfree * bsize
 	)
 	resp.AllBytes = all
 	resp.FreeBytes = free
