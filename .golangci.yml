@@ -47,121 +47,114 @@ linters:
     - copyloopvar
     - gci
 
-settings:
-  errcheck:
-    check-type-assertions: true
-    check-blank: true
-    exclude-functions:
-      - (*github.com/spf13/cobra.Command).MarkFlagRequired
+  settings:
+    errcheck:
+      check-type-assertions: true
+      check-blank: true
+      exclude-functions:
+        - (*github.com/spf13/cobra.Command).MarkFlagRequired
 
-  govet:
-    enable-all: true
-    disable:
-      - shadow
-      - fieldalignment
+    govet:
+      enable-all: true
+      disable:
+        - shadow
+        - fieldalignment
 
-  gocyclo:
-    min-complexity: 15
+    gocyclo:
+      min-complexity: 15
 
-  gocognit:
-    min-complexity: 20
+    gocognit:
+      min-complexity: 20
 
-  dupl:
-    threshold: 100
+    dupl:
+      threshold: 100
 
-  goconst:
-    min-len: 3
-    min-occurrences: 3
-    ignore-tests: true
+    goconst:
+      min-len: 3
+      min-occurrences: 3
+      ignore-tests: true
 
-  misspell:
-    locale: US
-    ignore-words:
-      - cosmos
-      - kubernetes
+    misspell:
+      locale: US
+      extra-words:
+        - typo: "cosmos"
+          correction: "cosmos"
+        - typo: "kubernetes"
+          correction: "kubernetes"
 
-  revive:
+    revive:
+      rules:
+        - name: blank-imports
+        - name: context-as-argument
+        - name: dot-imports
+        - name: error-return
+        - name: error-strings
+        - name: error-naming
+        - name: exported
+        - name: if-return
+        - name: increment-decrement
+        - name: var-naming
+        - name: var-declaration
+        - name: package-comments
+        - name: range
+        - name: receiver-naming
+        - name: time-naming
+        - name: unexported-return
+        - name: indent-error-flow
+        - name: errorf
+        - name: empty-block
+        - name: superfluous-else
+        - name: unused-parameter
+        - name: unreachable-code
+        - name: redefines-builtin-id
+
+    gosec:
+      excludes:
+        - G104
+      config:
+        G306: "0644"
+
+    nestif:
+      min-complexity: 5
+
+    nakedret:
+      max-func-lines: 30
+
+    gci:
+      sections:
+        - standard
+        - default
+        - prefix(github.com/altuslabsxyz/cosmos-operator)
+
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - std-error-handling
+    paths:
+      - vendor
+      - third_party
+      - ".*\\.pb\\.go$"
+      - ".*\\.gen\\.go$"
     rules:
-      - name: blank-imports
-      - name: context-as-argument
-      - name: dot-imports
-      - name: error-return
-      - name: error-strings
-      - name: error-naming
-      - name: exported
-      - name: if-return
-      - name: increment-decrement
-      - name: var-naming
-      - name: var-declaration
-      - name: package-comments
-      - name: range
-      - name: receiver-naming
-      - name: time-naming
-      - name: unexported-return
-      - name: indent-error-flow
-      - name: errorf
-      - name: empty-block
-      - name: superfluous-else
-      - name: unused-parameter
-      - name: unreachable-code
-      - name: redefines-builtin-id
+      - path: _test\.go
+        linters:
+          - gocyclo
+          - errcheck
+          - dupl
+          - gosec
+          - goconst
+          - revive
 
-  gosec:
-    excludes:
-      - G104
-    config:
-      G306: "0644"
+      - path: internal/thirdparty/
+        linters:
+          - revive
 
-  nestif:
-    min-complexity: 5
-
-  nakedret:
-    max-func-lines: 30
-
-  gci:
-    sections:
-      - standard
-      - default
-      - prefix(github.com/altuslabsxyz/cosmos-operator)
-    skip-generated: true
-
-exclusions:
-  generated: lax
-  presets:
-    - comments
-    - std-error-handling
-  paths:
-    - vendor
-    - third_party
-    - ".*\\.pb\\.go$"
-    - ".*\\.gen\\.go$"
-  rules:
-    # Exclude some linters from running on test files
-    - path: _test\.go
-      linters:
-        - gocyclo
-        - errcheck
-        - dupl
-        - gosec
-        - goconst
-        - revive
-
-    # Exclude known linters from partially hard-vendored code
-    - path: internal/thirdparty/
-      linters:
-        - revive
-
-    # Exclude specific linters for generated files
-    - path: ".*\\.pb\\.go"
-      linters:
-        - gocyclo
-        - errcheck
-        - gosec
-
-    # Exclude lll issues for long lines with go:generate
-    - linters:
-        - lll
-      source: "^//go:generate "
+      - path: ".*\\.pb\\.go"
+        linters:
+          - gocyclo
+          - errcheck
+          - gosec
 
 formatters:
   enable:
