@@ -32,10 +32,10 @@ type CacheInvalidator interface {
 // This is stricter than kube.IsPodReady() which only checks the Ready condition.
 //
 // For rollout calculations, we need to ensure:
-// 1. Pod is in Running phase (not Pending/Failed/Succeeded/Unknown)
-// 2. All init containers have completed successfully (prevents counting pods where
-//    version-check or other init containers are still running)
-// 3. K8s Ready condition is True (readiness probe passing)
+//  1. Pod is in Running phase (not Pending/Failed/Succeeded/Unknown)
+//  2. All init containers have completed successfully (prevents counting pods where
+//     version-check or other init containers are still running)
+//  3. K8s Ready condition is True (readiness probe passing)
 //
 // Note: Pods without init containers will pass check #2 (empty slice iteration).
 // This is correct behavior - those pods don't have init container prerequisites.
