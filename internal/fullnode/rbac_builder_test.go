@@ -32,8 +32,8 @@ func TestBuildRBAC(t *testing.T) {
 			"app.kubernetes.io/name":         "hub",
 			"app.kubernetes.io/component":    "vc",
 			"app.kubernetes.io/version":      "v6.0.0",
-			"cosmos.altuslabsxyz.io/network": "testnet",
-			"cosmos.altuslabsxyz.io/type":    "FullNode",
+			"cosmos.altuslabs.xyz/network": "testnet",
+			"cosmos.altuslabs.xyz/type":    "FullNode",
 		}
 		require.Equal(t, wantLabels, sa.Labels)
 
@@ -51,8 +51,8 @@ func TestBuildRBAC(t *testing.T) {
 			"app.kubernetes.io/name":         "hub",
 			"app.kubernetes.io/component":    "vc",
 			"app.kubernetes.io/version":      "v6.0.0",
-			"cosmos.altuslabsxyz.io/network": "testnet",
-			"cosmos.altuslabsxyz.io/type":    "FullNode",
+			"cosmos.altuslabs.xyz/network": "testnet",
+			"cosmos.altuslabs.xyz/type":    "FullNode",
 		}
 		require.Equal(t, wantLabels, role.Labels)
 
@@ -63,12 +63,12 @@ func TestBuildRBAC(t *testing.T) {
 				Verbs:     []string{"get", "list"},
 			},
 			{
-				APIGroups: []string{"cosmos.altuslabsxyz.io"},
+				APIGroups: []string{"cosmos.altuslabs.xyz"},
 				Resources: []string{"cosmosfullnodes"},
 				Verbs:     []string{"get"},
 			},
 			{
-				APIGroups: []string{"cosmos.altuslabsxyz.io"},
+				APIGroups: []string{"cosmos.altuslabs.xyz"},
 				Resources: []string{"cosmosfullnodes/status"},
 				Verbs:     []string{"patch"},
 			},
@@ -88,8 +88,8 @@ func TestBuildRBAC(t *testing.T) {
 			"app.kubernetes.io/name":         "hub",
 			"app.kubernetes.io/component":    "vc",
 			"app.kubernetes.io/version":      "v6.0.0",
-			"cosmos.altuslabsxyz.io/network": "testnet",
-			"cosmos.altuslabsxyz.io/type":    "FullNode",
+			"cosmos.altuslabs.xyz/network": "testnet",
+			"cosmos.altuslabs.xyz/type":    "FullNode",
 		}
 		require.Equal(t, wantLabels, rb.Labels)
 

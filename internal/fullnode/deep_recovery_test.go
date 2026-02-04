@@ -885,9 +885,9 @@ func TestDeepRecoveryManager_CreateVolumeSnapshot(t *testing.T) {
 
 		snapshot := mClient.LastCreateObject
 		require.Equal(t, "default", snapshot.Namespace)
-		require.Equal(t, "test-node", snapshot.Labels["cosmos.altuslabsxyz.io/recovery"])
-		require.Equal(t, "pod-0", snapshot.Labels["cosmos.altuslabsxyz.io/pod"])
-		require.Equal(t, "deep-recovery-backup", snapshot.Labels["cosmos.altuslabsxyz.io/type"])
+		require.Equal(t, "test-node", snapshot.Labels["cosmos.altuslabs.xyz/recovery"])
+		require.Equal(t, "pod-0", snapshot.Labels["cosmos.altuslabs.xyz/pod"])
+		require.Equal(t, "deep-recovery-backup", snapshot.Labels["cosmos.altuslabs.xyz/type"])
 		require.Equal(t, "csi-snapclass", *snapshot.Spec.VolumeSnapshotClassName)
 	})
 }

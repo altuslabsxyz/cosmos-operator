@@ -71,8 +71,8 @@ func TestPodBuilder(t *testing.T) {
 			"app.kubernetes.io/created-by":   "cosmos-operator",
 			"app.kubernetes.io/name":         "osmosis",
 			"app.kubernetes.io/version":      "v1.2.3",
-			"cosmos.altuslabsxyz.io/network": "mainnet",
-			"cosmos.altuslabsxyz.io/type":    "FullNode",
+			"cosmos.altuslabs.xyz/network": "mainnet",
+			"cosmos.altuslabs.xyz/type":    "FullNode",
 		}
 		require.Equal(t, wantLabels, pod.Labels)
 		require.NotNil(t, pod.Annotations)

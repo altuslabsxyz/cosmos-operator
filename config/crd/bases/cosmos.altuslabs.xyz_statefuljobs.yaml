@@ -3,10 +3,10 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.0
-  name: statefuljobs.cosmos.altuslabsxyz.io
+    controller-gen.kubebuilder.io/version: v0.17.1
+  name: statefuljobs.cosmos.altuslabs.xyz
 spec:
-  group: cosmos.altuslabsxyz.io
+  group: cosmos.altuslabs.xyz
   names:
     kind: StatefulJob
     listKind: StatefulJobList

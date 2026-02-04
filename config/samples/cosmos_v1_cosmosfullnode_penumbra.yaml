@@ -1,6 +1,6 @@
 # Example Penumbra Sentry configuration
 # 3 sentries, 1 per worker node
-apiVersion: cosmos.altuslabsxyz.io/v1
+apiVersion: cosmos.altuslabs.xyz/v1
 kind: CosmosFullNode
 metadata:
   name: penumbra-testnet-sentry

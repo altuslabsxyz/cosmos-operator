@@ -18,7 +18,7 @@ func HasTypeLabel(t *testing.T, builder func(crd cosmosv1.CosmosFullNode) []map[
 				resources := builder(crd)
 
 				for _, resource := range resources {
-					require.Equal(t, "FullNode", resource["cosmos.altuslabsxyz.io/type"])
+					require.Equal(t, "FullNode", resource["cosmos.altuslabs.xyz/type"])
 				}
 			})
 
@@ -27,7 +27,7 @@ func HasTypeLabel(t *testing.T, builder func(crd cosmosv1.CosmosFullNode) []map[
 				resources := builder(crd)
 
 				for _, resource := range resources {
-					require.Equal(t, "Sentry", resource["cosmos.altuslabsxyz.io/type"])
+					require.Equal(t, "Sentry", resource["cosmos.altuslabs.xyz/type"])
 				}
 			})
 
@@ -36,7 +36,7 @@ func HasTypeLabel(t *testing.T, builder func(crd cosmosv1.CosmosFullNode) []map[
 				resources := builder(crd)
 
 				for _, resource := range resources {
-					require.Equal(t, "FullNode", resource["cosmos.altuslabsxyz.io/type"])
+					require.Equal(t, "FullNode", resource["cosmos.altuslabs.xyz/type"])
 				}
 			})
 		})

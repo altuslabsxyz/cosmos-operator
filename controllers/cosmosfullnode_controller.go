@@ -87,9 +87,9 @@ var (
 	requeueResult = ctrl.Result{RequeueAfter: 3 * time.Second}
 )
 
-//+kubebuilder:rbac:groups=cosmos.altuslabsxyz.io,resources=cosmosfullnodes,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=cosmos.altuslabsxyz.io,resources=cosmosfullnodes/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=cosmos.altuslabsxyz.io,resources=cosmosfullnodes/finalizers,verbs=update
+//+kubebuilder:rbac:groups=cosmos.altuslabs.xyz,resources=cosmosfullnodes,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=cosmos.altuslabs.xyz,resources=cosmosfullnodes/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=cosmos.altuslabs.xyz,resources=cosmosfullnodes/finalizers,verbs=update
 // Generate RBAC roles to watch and update resources. IMPORTANT!!!! All resource names must be lowercase or cluster role will not work.
 //+kubebuilder:rbac:groups="",resources=pods;persistentvolumeclaims;services;serviceaccounts;configmaps,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups="rbac.authorization.k8s.io",resources=roles;rolebindings,verbs=get;list;watch;create;update;patch;delete;bind;escalate

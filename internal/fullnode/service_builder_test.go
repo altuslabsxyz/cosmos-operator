@@ -42,8 +42,8 @@ func TestBuildServices(t *testing.T) {
 				"app.kubernetes.io/component":    "p2p",
 				"app.kubernetes.io/version":      "v6.0.0",
 				"app.kubernetes.io/instance":     fmt.Sprintf("terra-%d", i),
-				"cosmos.altuslabsxyz.io/network": "testnet",
-				"cosmos.altuslabsxyz.io/type":    "FullNode",
+				"cosmos.altuslabs.xyz/network": "testnet",
+				"cosmos.altuslabs.xyz/type":    "FullNode",
 			}
 			require.Equal(t, wantLabels, p2p.Labels)
 
@@ -62,7 +62,7 @@ func TestBuildServices(t *testing.T) {
 			// By default, expose the first p2p service publicly.
 			if i == 0 {
 				wantSpec.Type = corev1.ServiceTypeLoadBalancer
-				wantSpec.ExternalTrafficPolicy = corev1.ServiceExternalTrafficPolicyTypeLocal
+				wantSpec.ExternalTrafficPolicy = corev1.ServiceExternalTrafficPolicyLocal
 			}
 
 			require.Equal(t, wantSpec, p2p.Spec)
@@ -84,7 +84,7 @@ func TestBuildServices(t *testing.T) {
 		for i, svc := range gotP2P[:2] {
 			p2p := svc.Object()
 			require.Equal(t, corev1.ServiceTypeLoadBalancer, p2p.Spec.Type, i)
-			require.Equal(t, corev1.ServiceExternalTrafficPolicyTypeLocal, p2p.Spec.ExternalTrafficPolicy, i)
+			require.Equal(t, corev1.ServiceExternalTrafficPolicyLocal, p2p.Spec.ExternalTrafficPolicy, i)
 		}
 
 		got := gotP2P[2].Object()
@@ -102,7 +102,7 @@ func TestBuildServices(t *testing.T) {
 				Labels: map[string]string{"test": "should not see me"},
 			},
 			Type:                  ptr(corev1.ServiceTypeNodePort),
-			ExternalTrafficPolicy: ptr(corev1.ServiceExternalTrafficPolicyTypeLocal),
+			ExternalTrafficPolicy: ptr(corev1.ServiceExternalTrafficPolicyLocal),
 		}
 
 		svcs := BuildServices(&crd)
@@ -131,7 +131,7 @@ func TestBuildServices(t *testing.T) {
 				Annotations: map[string]string{"test": "value2", "app.kubernetes.io/ordinal": "should not see me"},
 			},
 			Type:                  ptr(corev1.ServiceTypeNodePort),
-			ExternalTrafficPolicy: ptr(corev1.ServiceExternalTrafficPolicyTypeLocal),
+			ExternalTrafficPolicy: ptr(corev1.ServiceExternalTrafficPolicyLocal),
 		}
 		svcs := BuildServices(&crd)
 
@@ -158,7 +158,7 @@ func TestBuildServices(t *testing.T) {
 				},
 				Selector:              map[string]string{"app.kubernetes.io/instance": fmt.Sprintf("terra-%d", i)},
 				Type:                  corev1.ServiceTypeNodePort,
-				ExternalTrafficPolicy: corev1.ServiceExternalTrafficPolicyTypeLocal,
+				ExternalTrafficPolicy: corev1.ServiceExternalTrafficPolicyLocal,
 			}
 
 			require.Equal(t, wantSpec, p2p.Spec)
@@ -187,8 +187,8 @@ func TestBuildServices(t *testing.T) {
 			"app.kubernetes.io/name":         "terra",
 			"app.kubernetes.io/component":    "rpc",
 			"app.kubernetes.io/version":      "v6.0.0",
-			"cosmos.altuslabsxyz.io/network": "testnet",
-			"cosmos.altuslabsxyz.io/type":    "FullNode",
+			"cosmos.altuslabs.xyz/network": "testnet",
+			"cosmos.altuslabs.xyz/type":    "FullNode",
 		}
 		require.Equal(t, wantLabels, rpc.Labels)
 
@@ -255,7 +255,7 @@ func TestBuildServices(t *testing.T) {
 				Annotations: map[string]string{"test": "value"},
 			},
 			Type:                  ptr(corev1.ServiceTypeNodePort),
-			ExternalTrafficPolicy: ptr(corev1.ServiceExternalTrafficPolicyTypeLocal),
+			ExternalTrafficPolicy: ptr(corev1.ServiceExternalTrafficPolicyLocal),
 		}
 		svcs := BuildServices(&crd)
 
@@ -265,7 +265,7 @@ func TestBuildServices(t *testing.T) {
 		require.Equal(t, "value", rpc.Labels["label"])
 		require.Equal(t, "terra", rpc.Labels["app.kubernetes.io/name"])
 
-		require.Equal(t, corev1.ServiceExternalTrafficPolicyTypeLocal, rpc.Spec.ExternalTrafficPolicy)
+		require.Equal(t, corev1.ServiceExternalTrafficPolicyLocal, rpc.Spec.ExternalTrafficPolicy)
 		require.Equal(t, corev1.ServiceTypeNodePort, rpc.Spec.Type)
 	})
 

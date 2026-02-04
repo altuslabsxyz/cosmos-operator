@@ -406,9 +406,9 @@ func (m *DeepRecoveryManager) createVolumeSnapshot(
 			Namespace: crd.Namespace,
 			Labels: map[string]string{
 				"app.kubernetes.io/managed-by":    "cosmos-operator",
-				"cosmos.altuslabsxyz.io/recovery": crd.Name,
-				"cosmos.altuslabsxyz.io/pod":      pod.PodName,
-				"cosmos.altuslabsxyz.io/type":     "deep-recovery-backup",
+				"cosmos.altuslabs.xyz/recovery": crd.Name,
+				"cosmos.altuslabs.xyz/pod":      pod.PodName,
+				"cosmos.altuslabs.xyz/type":     "deep-recovery-backup",
 			},
 		},
 		Spec: snapshotv1.VolumeSnapshotSpec{
@@ -466,9 +466,9 @@ func (m *DeepRecoveryManager) createRecoveryPod(
 			Namespace: crd.Namespace,
 			Labels: map[string]string{
 				"app.kubernetes.io/managed-by":    "cosmos-operator",
-				"cosmos.altuslabsxyz.io/recovery": crd.Name,
-				"cosmos.altuslabsxyz.io/pod":      podInfo.PodName,
-				"cosmos.altuslabsxyz.io/type":     "recovery-pod",
+				"cosmos.altuslabs.xyz/recovery": crd.Name,
+				"cosmos.altuslabs.xyz/pod":      podInfo.PodName,
+				"cosmos.altuslabs.xyz/type":     "recovery-pod",
 			},
 		},
 		Spec: corev1.PodSpec{
@@ -590,9 +590,9 @@ func (m *DeepRecoveryManager) cleanupOldSnapshots(
 	if err := m.client.List(ctx, snapshots,
 		client.InNamespace(crd.Namespace),
 		client.MatchingLabels{
-			"cosmos.altuslabsxyz.io/recovery": crd.Name,
-			"cosmos.altuslabsxyz.io/pod":      podName,
-			"cosmos.altuslabsxyz.io/type":     "deep-recovery-backup",
+			"cosmos.altuslabs.xyz/recovery": crd.Name,
+			"cosmos.altuslabs.xyz/pod":      podName,
+			"cosmos.altuslabs.xyz/type":     "deep-recovery-backup",
 		},
 	); err != nil {
 		return err

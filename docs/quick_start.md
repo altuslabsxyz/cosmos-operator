@@ -9,14 +9,14 @@ deploys 2 replicas.
 
 ### Install the CRDs and deploy operator in your cluster
 
-View [docker images here](https://github.com/strangelove-ventures/cosmos-operator/pkgs/container/cosmos-operator).
+View [docker images here](https://github.com/altuslabsxyz/cosmos-operator/pkgs/container/cosmos-operator).
 
 ```sh
 # Deploy the latest release. Warning: May be a release candidate.
-make deploy IMG="ghcr.io/strangelove-ventures/cosmos-operator:$(git describe --tags --abbrev=0)"
+make deploy IMG="ghcr.io/altuslabsxyz/cosmos-operator:$(git describe --tags --abbrev=0)"
 
 # Deploy a specific version
-make deploy IMG="ghcr.io/strangelove-ventures/cosmos-operator:<version you choose>"
+make deploy IMG="ghcr.io/altuslabsxyz/cosmos-operator:<version you choose>"
 ```
 
 #### TODO
@@ -51,7 +51,7 @@ Using the information from the previous steps, create a yaml file using the belo
 Then `kubectl apply -f` the yaml file.
 
 ```yaml
-apiVersion: cosmos.strange.love/v1
+apiVersion: cosmos.altuslabs.xyz/v1
 kind: CosmosFullNode
 metadata:
   name: cosmoshub

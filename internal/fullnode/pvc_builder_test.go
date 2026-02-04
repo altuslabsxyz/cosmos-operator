@@ -60,8 +60,8 @@ func TestBuildPVCs(t *testing.T) {
 				"app.kubernetes.io/name":         "juno",
 				"app.kubernetes.io/instance":     fmt.Sprintf("juno-%d", i),
 				"app.kubernetes.io/version":      "v1.2.3",
-				"cosmos.altuslabsxyz.io/network": "mainnet",
-				"cosmos.altuslabsxyz.io/type":    "FullNode",
+				"cosmos.altuslabs.xyz/network": "mainnet",
+				"cosmos.altuslabs.xyz/type":    "FullNode",
 			}
 			require.Equal(t, wantLabels, got.Labels)
 

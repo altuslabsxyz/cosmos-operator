@@ -49,7 +49,7 @@ rules:
   - list
   - watch
 - apiGroups:
-  - cosmos.altuslabsxyz.io
+  - cosmos.altuslabs.xyz
   resources:
   - cosmosfullnodes
   - scheduledvolumesnapshots
@@ -63,7 +63,7 @@ rules:
   - update
   - watch
 - apiGroups:
-  - cosmos.altuslabsxyz.io
+  - cosmos.altuslabs.xyz
   resources:
   - cosmosfullnodes/finalizers
   - scheduledvolumesnapshots/finalizers
@@ -71,7 +71,7 @@ rules:
   verbs:
   - update
 - apiGroups:
-  - cosmos.altuslabsxyz.io
+  - cosmos.altuslabs.xyz
   resources:
   - cosmosfullnodes/status
   - scheduledvolumesnapshots/status
