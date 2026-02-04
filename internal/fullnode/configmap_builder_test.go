@@ -57,11 +57,11 @@ func TestBuildConfigMaps(t *testing.T) {
 		require.Nil(t, cm.Immutable)
 
 		wantLabels := map[string]string{
-			"app.kubernetes.io/created-by":   "cosmos-operator",
-			"app.kubernetes.io/component":    "CosmosFullNode",
-			"app.kubernetes.io/name":         "agoric",
-			"app.kubernetes.io/instance":     "agoric-0",
-			"app.kubernetes.io/version":      "v6.0.0",
+			"app.kubernetes.io/created-by": "cosmos-operator",
+			"app.kubernetes.io/component":  "CosmosFullNode",
+			"app.kubernetes.io/name":       "agoric",
+			"app.kubernetes.io/instance":   "agoric-0",
+			"app.kubernetes.io/version":    "v6.0.0",
 			"cosmos.altuslabs.xyz/network": "testnet",
 			"cosmos.altuslabs.xyz/type":    "FullNode",
 		}
