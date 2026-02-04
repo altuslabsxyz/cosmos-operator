@@ -4,9 +4,9 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.20.0
-  name: scheduledvolumesnapshots.cosmos.altuslabsxyz.io
+  name: scheduledvolumesnapshots.cosmos.altuslabs.xyz
 spec:
-  group: cosmos.altuslabsxyz.io
+  group: cosmos.altuslabs.xyz
   names:
     kind: ScheduledVolumeSnapshot
     listKind: ScheduledVolumeSnapshotList

@@ -37,13 +37,13 @@ func TestBuildNodeKeySecrets(t *testing.T) {
 			require.Equal(t, "v1", got.APIVersion)
 
 			wantLabels := map[string]string{
-				"app.kubernetes.io/created-by":   "cosmos-operator",
-				"app.kubernetes.io/component":    "CosmosFullNode",
-				"app.kubernetes.io/name":         "juno",
-				"app.kubernetes.io/instance":     fmt.Sprintf("juno-%d", i),
-				"app.kubernetes.io/version":      "v1.2.3",
-				"cosmos.altuslabsxyz.io/network": "mainnet",
-				"cosmos.altuslabsxyz.io/type":    "FullNode",
+				"app.kubernetes.io/created-by": "cosmos-operator",
+				"app.kubernetes.io/component":  "CosmosFullNode",
+				"app.kubernetes.io/name":       "juno",
+				"app.kubernetes.io/instance":   fmt.Sprintf("juno-%d", i),
+				"app.kubernetes.io/version":    "v1.2.3",
+				"cosmos.altuslabs.xyz/network": "mainnet",
+				"cosmos.altuslabs.xyz/type":    "FullNode",
 			}
 			require.Equal(t, wantLabels, got.Labels)
 

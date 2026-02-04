@@ -2,9 +2,9 @@
 # since it depends on service name and namespace that are out of this kustomize package.
 # It should be run by config/default
 resources:
-- bases/cosmos.altuslabsxyz.io_cosmosfullnodes.yaml
-- bases/cosmos.altuslabsxyz.io_statefuljobs.yaml
-- bases/cosmos.altuslabsxyz.io_scheduledvolumesnapshots.yaml
+- bases/cosmos.altuslabs.xyz_cosmosfullnodes.yaml
+- bases/cosmos.altuslabs.xyz_statefuljobs.yaml
+- bases/cosmos.altuslabs.xyz_scheduledvolumesnapshots.yaml
 #+kubebuilder:scaffold:crdkustomizeresource
 
 patches:

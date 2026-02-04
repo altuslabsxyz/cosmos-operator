@@ -4,9 +4,9 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.20.0
-  name: statefuljobs.cosmos.altuslabsxyz.io
+  name: statefuljobs.cosmos.altuslabs.xyz
 spec:
-  group: cosmos.altuslabsxyz.io
+  group: cosmos.altuslabs.xyz
   names:
     kind: StatefulJob
     listKind: StatefulJobList

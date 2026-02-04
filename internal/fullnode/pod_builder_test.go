@@ -66,13 +66,13 @@ func TestPodBuilder(t *testing.T) {
 		require.Equal(t, "osmosis-5", pod.Spec.Hostname)
 
 		wantLabels := map[string]string{
-			"app.kubernetes.io/instance":     "osmosis-5",
-			"app.kubernetes.io/component":    "CosmosFullNode",
-			"app.kubernetes.io/created-by":   "cosmos-operator",
-			"app.kubernetes.io/name":         "osmosis",
-			"app.kubernetes.io/version":      "v1.2.3",
-			"cosmos.altuslabsxyz.io/network": "mainnet",
-			"cosmos.altuslabsxyz.io/type":    "FullNode",
+			"app.kubernetes.io/instance":   "osmosis-5",
+			"app.kubernetes.io/component":  "CosmosFullNode",
+			"app.kubernetes.io/created-by": "cosmos-operator",
+			"app.kubernetes.io/name":       "osmosis",
+			"app.kubernetes.io/version":    "v1.2.3",
+			"cosmos.altuslabs.xyz/network": "mainnet",
+			"cosmos.altuslabs.xyz/type":    "FullNode",
 		}
 		require.Equal(t, wantLabels, pod.Labels)
 		require.NotNil(t, pod.Annotations)

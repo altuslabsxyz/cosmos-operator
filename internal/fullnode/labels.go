@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	networkLabel = "cosmos.altuslabsxyz.io/network"
-	typeLabel    = "cosmos.altuslabsxyz.io/type"
+	networkLabel = "cosmos.altuslabs.xyz/network"
+	typeLabel    = "cosmos.altuslabs.xyz/type"
 )
 
 // kv is a list of extra kv pairs to add to the labels. Must be even.

@@ -19,7 +19,7 @@ import (
 	"github.com/altuslabsxyz/cosmos-operator/internal/kube"
 )
 
-const cosmosSourceLabel = "cosmos.altuslabsxyz.io/source"
+const cosmosSourceLabel = "cosmos.altuslabs.xyz/source"
 
 // Client is a subset of client.Client.
 type Client interface {

@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	configChecksumAnnotation = "cosmos.altuslabsxyz.io/config-checksum"
+	configChecksumAnnotation = "cosmos.altuslabs.xyz/config-checksum"
 )
 
 // BuildPods creates the final state of pods given the crd.

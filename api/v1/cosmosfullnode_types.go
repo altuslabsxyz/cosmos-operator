@@ -767,7 +767,7 @@ type ServiceOverridesSpec struct {
 	// If not set, defaults to "Cluster".
 	// +kubebuilder:validation:Enum:=Cluster;Local
 	// +optional
-	ExternalTrafficPolicy *corev1.ServiceExternalTrafficPolicyType `json:"externalTrafficPolicy"`
+	ExternalTrafficPolicy *corev1.ServiceExternalTrafficPolicy `json:"externalTrafficPolicy"`
 }
 
 // InstanceOverridesSpec allows overriding an instance which is pod/pvc combo with an ordinal

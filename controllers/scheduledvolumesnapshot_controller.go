@@ -61,10 +61,10 @@ func NewScheduledVolumeSnapshotReconciler(
 	}
 }
 
-//+kubebuilder:rbac:groups=cosmos.altuslabsxyz.io,resources=scheduledvolumesnapshots,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=cosmos.altuslabsxyz.io,resources=scheduledvolumesnapshots/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=cosmos.altuslabsxyz.io,resources=scheduledvolumesnapshots/finalizers,verbs=update
-//+kubebuilder:rbac:groups=cosmos.altuslabsxyz.io,resources=cosmosfullnodes/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=cosmos.altuslabs.xyz,resources=scheduledvolumesnapshots,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=cosmos.altuslabs.xyz,resources=scheduledvolumesnapshots/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=cosmos.altuslabs.xyz,resources=scheduledvolumesnapshots/finalizers,verbs=update
+//+kubebuilder:rbac:groups=cosmos.altuslabs.xyz,resources=cosmosfullnodes/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=snapshot.storage.k8s.io,resources=volumesnapshots,verbs=get;create;delete
 //+kubebuilder:rbac:groups="",resources=pods,verbs=get;list;watch
 
