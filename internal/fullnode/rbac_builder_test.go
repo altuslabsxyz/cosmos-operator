@@ -28,10 +28,10 @@ func TestBuildRBAC(t *testing.T) {
 		require.Equal(t, "test", sa.Namespace)
 
 		wantLabels := map[string]string{
-			"app.kubernetes.io/created-by":   "cosmos-operator",
-			"app.kubernetes.io/name":         "hub",
-			"app.kubernetes.io/component":    "vc",
-			"app.kubernetes.io/version":      "v6.0.0",
+			"app.kubernetes.io/created-by": "cosmos-operator",
+			"app.kubernetes.io/name":       "hub",
+			"app.kubernetes.io/component":  "vc",
+			"app.kubernetes.io/version":    "v6.0.0",
 			"cosmos.altuslabs.xyz/network": "testnet",
 			"cosmos.altuslabs.xyz/type":    "FullNode",
 		}
@@ -47,10 +47,10 @@ func TestBuildRBAC(t *testing.T) {
 		require.Equal(t, "test", role.Namespace)
 
 		wantLabels = map[string]string{
-			"app.kubernetes.io/created-by":   "cosmos-operator",
-			"app.kubernetes.io/name":         "hub",
-			"app.kubernetes.io/component":    "vc",
-			"app.kubernetes.io/version":      "v6.0.0",
+			"app.kubernetes.io/created-by": "cosmos-operator",
+			"app.kubernetes.io/name":       "hub",
+			"app.kubernetes.io/component":  "vc",
+			"app.kubernetes.io/version":    "v6.0.0",
 			"cosmos.altuslabs.xyz/network": "testnet",
 			"cosmos.altuslabs.xyz/type":    "FullNode",
 		}
@@ -84,10 +84,10 @@ func TestBuildRBAC(t *testing.T) {
 		require.Equal(t, "test", rb.Namespace)
 
 		wantLabels = map[string]string{
-			"app.kubernetes.io/created-by":   "cosmos-operator",
-			"app.kubernetes.io/name":         "hub",
-			"app.kubernetes.io/component":    "vc",
-			"app.kubernetes.io/version":      "v6.0.0",
+			"app.kubernetes.io/created-by": "cosmos-operator",
+			"app.kubernetes.io/name":       "hub",
+			"app.kubernetes.io/component":  "vc",
+			"app.kubernetes.io/version":    "v6.0.0",
 			"cosmos.altuslabs.xyz/network": "testnet",
 			"cosmos.altuslabs.xyz/type":    "FullNode",
 		}
