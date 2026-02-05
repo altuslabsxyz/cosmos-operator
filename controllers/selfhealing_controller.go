@@ -317,6 +317,7 @@ func (r *SelfHealingReconciler) SetupWithManager(_ context.Context, mgr ctrl.Man
 	// We do not have to index Pods because the CosmosFullNodeReconciler already does so.
 	// If we repeat it here, the manager returns an error.
 	return ctrl.NewControllerManagedBy(mgr).
+		Named("selfhealing").
 		For(&cosmosv1.CosmosFullNode{}).
 		Complete(r)
 }
