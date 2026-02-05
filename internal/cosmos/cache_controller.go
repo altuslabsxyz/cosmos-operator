@@ -113,6 +113,7 @@ func (c *CacheController) SetupWithManager(_ context.Context, mgr ctrl.Manager) 
 	// We do not index pods because we presume another controller is already doing so.
 	// If we repeat it here, the manager returns an error.
 	return ctrl.NewControllerManagedBy(mgr).
+		Named("cosmoscache").
 		For(&cosmosv1.CosmosFullNode{}).
 		Complete(c)
 }
