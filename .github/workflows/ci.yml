@@ -83,7 +83,7 @@ jobs:
           go tool cover -html=coverage.out -o coverage.html
 
       - name: Archive coverage report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: coverage-report
           path: coverage.html
@@ -167,7 +167,7 @@ jobs:
           go build -tags pebbledb -ldflags "-X github.com/altuslabsxyz/cosmos-operator/internal/version.version=dev-${{ github.sha }}" -o manager-${{ matrix.os }}-${{ matrix.arch }} .
 
       - name: Upload binary artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: manager-${{ matrix.os }}-${{ matrix.arch }}
           path: manager-${{ matrix.os }}-${{ matrix.arch }}
