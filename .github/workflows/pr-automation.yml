@@ -84,7 +84,7 @@ jobs:
     if: github.event.action == 'opened'
     steps:
       - name: Comment on PR
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const body = `Thanks for opening this PR!
@@ -136,7 +136,7 @@ jobs:
           go test -bench=. -benchmem -run=^$ ./... | tee benchmark.txt
 
       - name: Comment benchmark results
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const fs = require('fs');
