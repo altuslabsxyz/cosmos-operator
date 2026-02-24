@@ -35,40 +35,41 @@ const (
 )
 
 // VersionCheckCmd gets the height of this node and updates the status of the crd.
-// It panics if the wrong image is specified for the pod for the height,
+// It exits with an error if the wrong image is specified for the pod for the height,
 // restarting the pod so that the correct image is used from the patched height.
-// this command is intended to be run as an init container.
+// This command is intended to be run as an init container.
 func VersionCheckCmd(scheme *runtime.Scheme) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "versioncheck",
-		Short: "Confirm correct image used for current node height",
-		Long:  `Open the Cosmos SDK chain database, get the height, update the crd status with the height, then check the image for the height and panic if it is incorrect.`,
-		Run: func(cmd *cobra.Command, _ []string) {
+		Use:          "versioncheck",
+		Short:        "Confirm correct image used for current node height",
+		Long:         `Open the Cosmos SDK chain database, get the height, update the crd status with the height, then check the image for the height and exit with an error if it is incorrect.`,
+		SilenceUsage: true,
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			dataDir := os.Getenv("DATA_DIR")
 			backend, _ := cmd.Flags().GetString(flagBackend)
 			daemon, _ := cmd.Flags().GetBool(flagDaemon)
 
 			nsbz, err := os.ReadFile(namespaceFile)
 			if err != nil {
-				panic(fmt.Errorf("failed to read namespace from service account: %w", err))
+				return fmt.Errorf("failed to read namespace from service account: %w", err)
 			}
 			ns := string(nsbz)
 
 			config, err := rest.InClusterConfig()
 			if err != nil {
-				panic(fmt.Errorf("failed to get in cluster config: %w", err))
+				return fmt.Errorf("failed to get in cluster config: %w", err)
 			}
 
 			clientset, err := kubernetes.NewForConfig(config)
 			if err != nil {
-				panic(fmt.Errorf("failed to create kube clientset: %w", err))
+				return fmt.Errorf("failed to create kube clientset: %w", err)
 			}
 
 			ctx := cmd.Context()
 
 			thisPod, err := clientset.CoreV1().Pods(ns).Get(ctx, os.Getenv("HOSTNAME"), metav1.GetOptions{})
 			if err != nil {
-				panic(fmt.Errorf("failed to get this pod: %w", err))
+				return fmt.Errorf("failed to get this pod: %w", err)
 			}
 
 			cosmosFullNodeName := thisPod.Labels["app.kubernetes.io/name"]
@@ -77,7 +78,7 @@ func VersionCheckCmd(scheme *runtime.Scheme) *cobra.Command {
 				Scheme: scheme,
 			})
 			if err != nil {
-				panic(fmt.Errorf("failed to create kube client: %w", err))
+				return fmt.Errorf("failed to create kube client: %w", err)
 			}
 
 			namespacedName := types.NamespacedName{
@@ -87,21 +88,21 @@ func VersionCheckCmd(scheme *runtime.Scheme) *cobra.Command {
 
 			crd := new(cosmosv1.CosmosFullNode)
 			if err = kClient.Get(ctx, namespacedName, crd); err != nil {
-				panic(fmt.Errorf("failed to get crd: %w", err))
+				return fmt.Errorf("failed to get crd: %w", err)
 			}
 
 			if len(crd.Spec.ChainSpec.Versions) == 0 {
 				fmt.Fprintln(cmd.OutOrStdout(), "No versions specified, skipping version check")
-				return
+				return nil
 			}
 
 			s, err := os.Stat(dataDir)
 			if err != nil {
-				panic(fmt.Errorf("failed to stat %s: %w", dataDir, err))
+				return fmt.Errorf("failed to stat %s: %w", dataDir, err)
 			}
 
 			if !s.IsDir() {
-				panic(fmt.Errorf("%s is not a directory", dataDir))
+				return fmt.Errorf("%s is not a directory", dataDir)
 			}
 
 			if daemon {
@@ -110,18 +111,16 @@ func VersionCheckCmd(scheme *runtime.Scheme) *cobra.Command {
 				for {
 					select {
 					case <-cmd.Context().Done():
-						return
+						return nil
 					case <-ticker.C:
 						if err := checkVersion(cmd.Context(), nil, kClient, namespacedName, thisPod, dataDir, backend, cmd.OutOrStdout()); err != nil {
-							panic(err)
+							return err
 						}
 						ticker.Reset(tickTime)
 					}
 				}
 			}
-			if err := checkVersion(cmd.Context(), crd, kClient, namespacedName, thisPod, dataDir, backend, cmd.OutOrStdout()); err != nil {
-				panic(err)
-			}
+			return checkVersion(cmd.Context(), crd, kClient, namespacedName, thisPod, dataDir, backend, cmd.OutOrStdout())
 		},
 	}
 
@@ -141,7 +140,11 @@ func checkVersion(
 	backend string,
 	writer io.Writer,
 ) error {
-	db, err := dbm.NewDB("application", getBackend(backend), dataDir)
+	dbBackend, err := getBackend(backend)
+	if err != nil {
+		return err
+	}
+	db, err := dbm.NewDB("application", dbBackend, dataDir)
 	if err != nil {
 		if crd == nil {
 			fmt.Fprintf(writer, "Failed to open db: %s. The node is likely running.\n", err)
@@ -241,17 +244,17 @@ func patchStatusHeightIfNecessary(
 	return nil
 }
 
-func getBackend(backend string) dbm.BackendType {
+func getBackend(backend string) (dbm.BackendType, error) {
 	switch backend {
 	case "goleveldb":
-		return dbm.GoLevelDBBackend
+		return dbm.GoLevelDBBackend, nil
 	case "memdb":
-		return dbm.MemDBBackend
+		return dbm.MemDBBackend, nil
 	case "rocksdb":
-		return dbm.RocksDBBackend
+		return dbm.RocksDBBackend, nil
 	case "pebbledb":
-		return dbm.PebbleDBBackend
+		return dbm.PebbleDBBackend, nil
 	default:
-		panic(fmt.Errorf("unknown backend %s", backend))
+		return "", fmt.Errorf("unknown backend %s", backend)
 	}
 }
