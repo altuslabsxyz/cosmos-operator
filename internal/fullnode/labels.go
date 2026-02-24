@@ -44,6 +44,11 @@ func instanceName(crd *cosmosv1.CosmosFullNode, ordinal int32) string {
 	return kube.ToName(fmt.Sprintf("%s-%d", appName(crd), ordinal))
 }
 
+// InstanceName returns the deterministic pod name for a given CRD and ordinal.
+func InstanceName(crd *cosmosv1.CosmosFullNode, ordinal int32) string {
+	return instanceName(crd, ordinal)
+}
+
 // Conditionally add custom labels or annotations, preserving key/values already set on 'into'.
 // 'into' must not be nil.
 func preserveMergeInto(into map[string]string, other map[string]string) {

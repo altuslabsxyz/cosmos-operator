@@ -243,10 +243,18 @@ func (r *CosmosFullNodeReconciler) updateStatus(
 				status.Height[k] = *v.Height + 1 // we want the block that is going through consensus, not the committed one.
 			}
 		}
-		// Cleanup Height entries for pods that no longer exist (e.g., replicas reduced)
+		// Cleanup Height entries for pods that no longer exist (e.g., replicas reduced).
+		// Use expected pod names from replicas rather than syncInfo, because syncInfo only
+		// contains pods with running RPC endpoints. Crashing pods (e.g., version-check
+		// init container failing) are absent from syncInfo but still need their heights
+		// preserved for correct image selection during upgrades.
 		if status.Height != nil {
+			expectedPods := make(map[string]struct{}, crd.Spec.Replicas)
+			for i := int32(0); i < crd.Spec.Replicas; i++ {
+				expectedPods[fullnode.InstanceName(crd, i)] = struct{}{}
+			}
 			for podName := range status.Height {
-				if _, exists := syncInfo[podName]; !exists {
+				if _, exists := expectedPods[podName]; !exists {
 					delete(status.Height, podName)
 				}
 			}
