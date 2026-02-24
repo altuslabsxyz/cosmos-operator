@@ -606,7 +606,7 @@ func initContainers(crd *cosmosv1.CosmosFullNode, moniker string) []corev1.Conta
 	// Append version check after snapshot download, if applicable.
 	// That way the version check will be after the database is initialized.
 	// This initContainer will update the crd status with the current height for the pod,
-	// And then panic if the image version is not correct for the current height.
+	// And then exit with an error if the image version is not correct for the current height.
 	// After the status is patched, the pod will be restarted with the correct image.
 	required = append(required, corev1.Container{
 		Name:    "version-check",
